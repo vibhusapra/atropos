@@ -1,6 +1,6 @@
 # GRPO Example Trainer
 
-This directory contains an example script (`grpo.py`) demonstrating how to integrate a custom training loop with the Atropos API for reinforcement learning using the GRPO (Generalized Reinforcement Policy Optimization) algorithm.
+This directory contains an example script (`grpo.py`) demonstrating how to integrate a custom training loop with the Atropos API for reinforcement learning using the GRPO (Group Relative Policy Optimization) algorithm.
 
 This example uses `vLLM` for efficient inference during the (simulated) data generation phase and `transformers` for the training phase.
 
