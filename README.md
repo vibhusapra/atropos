@@ -127,7 +127,7 @@ Key Documents:
 - [Example Trainer](example_trainer/README.md) - Getting started with training
 - [Slurm Guide](SLURM.md) - Guide for using Atropos with Slurm for distributed inference
 - [Contributing Guide](CONTRIBUTING.md) - Guidelines for contributors
-- [License](LICENSE.md) - Apache 2.0 license details
+- [License](LICENSE) - Apache 2.0 license details
 
 ---
 
@@ -223,4 +223,4 @@ Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 ---
 
 ## License
-Atropos is licensed as Apache 2.0, see the [LICENSE](LICENSE.md) file here for more information
+Atropos is licensed as Apache 2.0, see the [LICENSE](LICENSE) file here for more information
