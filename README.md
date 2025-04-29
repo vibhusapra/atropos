@@ -223,4 +223,4 @@ Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 ---
 
 ## License
-Atropos is licensed as Apache 2.0, see the [LICENSE](LICENSE) file here for more information
+Atropos is uses the MIT license, see the [LICENSE](LICENSE) file here for more information
