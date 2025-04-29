@@ -127,7 +127,7 @@ Key Documents:
 - [Example Trainer](example_trainer/README.md) - Getting started with training
 - [Slurm Guide](SLURM.md) - Guide for using Atropos with Slurm for distributed inference
 - [Contributing Guide](CONTRIBUTING.md) - Guidelines for contributors
-- [License](LICENSE) - Apache 2.0 license details
+- [License](LICENSE) - MIT license details
 
 ---
 
