@@ -171,6 +171,9 @@ pre-commit install
    run-api & python environments/gsm8k_server.py serve \
        --slurm false
    ```
+3. **Query the the API (Optional)**
+
+  If you want to just query the api, start getting rollouts, and not use a trainer, see [API Docs](https://github.com/NousResearch/atropos/tree/main/atroposlib/api) to explore the REST API interface that this API exposes, if you plan to use a trainer, skip to step 4.
 
 4. **Training Your Model**
    - Follow our [training example guide](example_trainer/README.md) for detailed instructions
