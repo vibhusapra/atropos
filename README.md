@@ -163,14 +163,16 @@ pre-commit install
    - Check out existing environments in the [`environments/`](environments) directory for examples
 
 2. **Run an Example Environment**
+
+  You should edit the configuration section of the environment file you want to point to a running VLLM or SGLang inference server as well as any other configuration changes you'd like to make, such as the group size, then:
+  
    ```bash
    # Start the API server and run the GSM8K environment
    run-api & python environments/gsm8k_server.py serve \
-       --tokenizer_name="Qwen/Qwen2.5-1.5B-Instruct" \
-       --model_name="Qwen/Qwen2.5-1.5B-Instruct"
+       --slurm false
    ```
 
-3. **Training Your Model**
+4. **Training Your Model**
    - Follow our [training example guide](example_trainer/README.md) for detailed instructions
    - Monitor progress through our built-in logging and reporting system:
      - Completion lengths
