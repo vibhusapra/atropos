@@ -241,6 +241,8 @@ If you would like to use OpenAI models, please edit your `config_init` to someth
         return env_config, server_configs
 ```
 
+For DPO, replace `atropos-sft-gen` with `atropos-dpo-gen`. Everything else can stay the same.
+
 ---
 
 ## Citation
