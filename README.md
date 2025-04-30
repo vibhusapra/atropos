@@ -213,6 +213,7 @@ python gsm8k_server.py serve --slurm False # or an env of your choice
 ```sh
 atropos-sft-gen path/to/output.jsonl --tokenizer Qwen/Qwen2.5-1.5B-Instruct # or whichever tokenizer you have in your env config
 ```
+Rejection sampling can be controlled via `--save-top-n-per-group`, `--allow-negative-scores`, and `--minimum-score-diff-max-min`. See `atropos-sft-gen -h` for more detailed usage info.
 
 If you would like to use OpenAI models, please edit your `config_init` to something like the following:
 ```python
@@ -241,7 +242,7 @@ If you would like to use OpenAI models, please edit your `config_init` to someth
         return env_config, server_configs
 ```
 
-For DPO, replace `atropos-sft-gen` with `atropos-dpo-gen`. Everything else can stay the same.
+For DPO, replace `atropos-sft-gen` with `atropos-dpo-gen` and check `atropos-dpo-gen -h` for data filtering and saving options.
 
 ---
 
