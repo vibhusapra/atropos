@@ -1,6 +1,6 @@
 # Atropos - Nous Research's LLM RL Gym
 
-![newatr-02](https://pbs.twimg.com/media/Gpudrc3a4AA8qTQ?format=jpg&name=large)
+![newatr-02](banner-image.jpg)
 
 <div align="center">
 
