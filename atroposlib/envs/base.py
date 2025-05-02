@@ -788,7 +788,7 @@ class BaseEnv(ABC):
         await self.setup()
         await self.setup_wandb()
 
-        if not self.use_api:
+        if not use_api:
             await self.add_train_workers()
             return
 
@@ -992,7 +992,7 @@ class BaseEnv(ABC):
         PROCESS_MODE_OPENAI_DEFAULT_CONFIG = OpenaiConfig(
             model_name="gpt-4.1-nano",
             base_url=None,
-            api_key=os.environ.get("OPENAI_API_KEY"),
+            api_key=None,
         )
         PROCESS_MODE_SERVER_MANAGER_DEFAULT_CONFIG = ServerManagerConfig(
             slurm=False,
