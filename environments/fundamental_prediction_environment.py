@@ -1,6 +1,6 @@
 import random
 import re
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Dict
 
 from datasets import load_dataset
 from tqdm.asyncio import tqdm_asyncio
@@ -499,6 +499,42 @@ class FundamentalPredictionEnv(BaseEnv):
         self.eval_metrics.append(("eval/direction_accuracy", direction_accuracy))
         self.eval_metrics.append(("eval/magnitude_accuracy", magnitude_accuracy))
         self.eval_metrics.append(("eval/combined_score", average_combined_score))
+
+    async def wandb_log(self, wandb_metrics: Optional[Dict] = None):
+        if wandb_metrics is None:
+            wandb_metrics = {}
+
+        # Calculate and log training direction accuracy
+        try:
+            direction_accuracy = sum(self.percent_correct_buffer) / len(self.percent_correct_buffer)
+            wandb_metrics["train/direction_accuracy"] = direction_accuracy
+        except ZeroDivisionError:
+            pass  # Skip if buffer is empty
+
+        # Calculate and log training magnitude accuracy
+        try:
+            magnitude_accuracy = sum(self.magnitude_accuracy_buffer) / len(self.magnitude_accuracy_buffer)
+            wandb_metrics["train/magnitude_accuracy"] = magnitude_accuracy
+        except ZeroDivisionError:
+            pass  # Skip if buffer is empty
+
+        # Calculate combined training score (direction + magnitude)
+        try:
+            combined_score = direction_accuracy + magnitude_accuracy if 'direction_accuracy' in wandb_metrics else 0
+            wandb_metrics["train/combined_score"] = combined_score
+        except:
+            pass
+
+        # Clear the buffers after logging
+        self.percent_correct_buffer = list()
+        self.magnitude_accuracy_buffer = list()
+
+        # Log evaluation metrics
+        for item in self.eval_metrics:
+            wandb_metrics[item[0]] = item[1]
+        self.eval_metrics = list()
+
+        await super().wandb_log(wandb_metrics)
 
 
 if __name__ == "__main__":
