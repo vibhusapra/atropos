@@ -781,17 +781,12 @@ class BaseEnv(ABC):
                 )
             )
 
-    async def env_manager(self, use_api=True):
+    async def env_manager(self):
         """
         Rollout manager
         """
         await self.setup()
         await self.setup_wandb()
-
-        if not use_api:
-            await self.add_train_workers()
-            return
-
         await self.register_env()
         await self.get_server_info()
         # Wait for other instances to get setup :)
@@ -846,7 +841,12 @@ class BaseEnv(ABC):
             random_id = "".join(random.choices(string.ascii_lowercase, k=6))
             current_date = datetime.now().strftime("%Y-%m-%d")
             wandb_run_name = f"{self.name}-{current_date}-{random_id}"
-            wandb.init(project=self.wandb_project, name=wandb_run_name)
+            wandb.init(
+                project=self.wandb_project,
+                name=wandb_run_name,
+                group=self.wandb_group,
+                config=self.config.model_dump(),
+            )
 
         # Initialize the processing
         self.curr_step = 0
