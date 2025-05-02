@@ -21,14 +21,14 @@ import yaml
 from pydantic import BaseModel, Field
 from pydantic_cli import Cmd, FailedExecutionException, run_and_exit
 from tenacity import retry, stop_after_attempt, wait_random_exponential
-from trajectoryhandler.envs.constants import (
+from atroposlib.envs.constants import (
     ENV_NAMESPACE,
     NAMESPACE_SEP,
     OPENAI_NAMESPACE,
     SERVER_MANAGER_NAMESPACE,
 )
-from trajectoryhandler.frontend.jsonl2html import generate_html
-from trajectoryhandler.utils.cli import (
+from atroposlib.frontend.jsonl2html import generate_html
+from atroposlib.utils.cli import (
     adjust_model_defaults,
     extract_namespace,
     get_double_dash_flags,
