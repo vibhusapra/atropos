@@ -155,6 +155,7 @@ class BaseEnvConfig(BaseModel):
 class BaseEnv(ABC):
 
     name = None
+    env_config_cls = BaseEnvConfig
 
     def __init__(
         self,
@@ -228,7 +229,7 @@ class BaseEnv(ABC):
         """
         Initialize the config
         """
-        return BaseEnvConfig(), ServerBaseline()
+        return cls.env_config_cls(), ServerBaseline()
 
     async def collect_trajectory(self, item: Item) -> Tuple[Any | None, List[Item]]:
         raise NotImplementedError(
