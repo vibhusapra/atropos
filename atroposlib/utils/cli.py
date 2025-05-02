@@ -8,7 +8,17 @@ def get_prefixed_pydantic_model(base_model: BaseModel, prefix: str) -> BaseModel
     fields = {}
     for name, field in base_model.model_fields.items():
         new_name = f"{prefix}{name}"
-        fields[new_name] = (field.annotation, field.default)
+
+        # Preserve field metadata, especially description
+        field_kwargs = {}
+        if hasattr(field, "description") and field.description is not None:
+            field_kwargs["description"] = field.description
+
+        fields[new_name] = (
+            field.annotation,
+            Field(default=field.default, **field_kwargs),
+        )
+
     return create_model(f"{prefix.capitalize()}{base_model.__name__}", **fields)
 
 
