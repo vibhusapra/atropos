@@ -1018,7 +1018,7 @@ class BaseEnv(ABC):
                     default_openai_config_ = default_openai_config
                 if isinstance(yaml_oai_config, list) and len(yaml_oai_config) == 1:
                     yaml_oai_config = yaml_oai_config[0]
-                if isinstance(default_openai_config, OpenaiConfig) and isinstance(
+                if isinstance(default_openai_config_, OpenaiConfig) and isinstance(
                     yaml_oai_config, dict
                 ):
                     openai_config_dict = merge_dicts(
@@ -1119,23 +1119,10 @@ class BaseEnv(ABC):
         )
 
         # Get the base default configurations from the specific environment class
-        default_env_config, default_server_configs = cls.config_init()
-
-        # Ensure default_openai_config is a single instance for default merging logic.
-        # Process mode specifically uses OpenaiConfig, so we establish a base default.
-        if isinstance(default_server_configs, list):
-            # Use the first if available and is OpenaiConfig, otherwise use a base OpenaiConfig
-            default_openai_config = (
-                default_server_configs[0]
-                if default_server_configs
-                and isinstance(default_server_configs[0], OpenaiConfig)
-                else OpenaiConfig()
-            )
-        elif isinstance(default_server_configs, OpenaiConfig):
-            default_openai_config = default_server_configs
-        else:
-            # If config_init returned ServerBaseline or something else, use a base OpenaiConfig for defaults
-            default_openai_config = OpenaiConfig()
+        (
+            default_env_config,
+            default_openai_config,
+        ) = cls.config_init()
 
         # Define namespace prefixes
         env_full_prefix = f"{ENV_NAMESPACE}{NAMESPACE_SEP}"
@@ -1207,12 +1194,30 @@ class BaseEnv(ABC):
                 )
 
                 # 2. OpenAI Configuration
-                openai_config_dict = merge_dicts(
-                    default_openai_config.model_dump(),  # Class Defaults (adjusted to be OpenaiConfig)
-                    PROCESS_MODE_OPENAI_DEFAULT_CONFIG.model_dump(),  # Process Mode Defaults
-                    yaml_config.get(OPENAI_NAMESPACE, {}),  # YAML config
-                    extract_namespace(cli_passed_flags, openai_full_prefix),  # CLI args
-                )
+                if (
+                    isinstance(default_openai_config, list)
+                    and len(default_openai_config) == 1
+                ):
+                    # can't use the same var name because it shadows the class variable and we get an error
+                    default_openai_config_ = default_openai_config[0]
+                else:
+                    default_openai_config_ = default_openai_config
+                yaml_oai_config = yaml_config.get(OPENAI_NAMESPACE, {})
+                if isinstance(yaml_oai_config, list) and len(yaml_oai_config) == 1:
+                    yaml_oai_config = yaml_oai_config[0]
+                if isinstance(default_openai_config_, OpenaiConfig) and isinstance(
+                    yaml_oai_config, dict
+                ):
+                    openai_config_dict = merge_dicts(
+                        default_openai_config_.model_dump(),  # Default OpenaiConfig (or from class init)
+                        PROCESS_MODE_OPENAI_DEFAULT_CONFIG.model_dump(),  # Process Mode Defaults
+                        yaml_oai_config,
+                        extract_namespace(
+                            cli_passed_flags, openai_full_prefix
+                        ),  # CLI args
+                    )
+                else:
+                    openai_config_dict = {}
 
                 # 3. Server Manager Configuration
                 # Extract only relevant CLI flags
@@ -1248,7 +1253,7 @@ class BaseEnv(ABC):
                 # Determine the final server_configs, handling single, multiple servers, and overrides.
 
                 openai_configs = resolve_openai_configs(
-                    default_server_configs=default_server_configs,
+                    default_server_configs=default_openai_config,
                     openai_config_dict=openai_config_dict,
                     yaml_config=yaml_config,
                     cli_passed_flags=cli_passed_flags,
