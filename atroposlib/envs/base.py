@@ -1085,7 +1085,7 @@ class BaseEnv(ABC):
                 rprint(env_config)
                 rprint(openai_configs)
 
-                # Run the environment's main asynchronous manager function
+                # Run the environment
                 asyncio.run(env.env_manager())
 
         return CliServeConfig
@@ -1105,17 +1105,16 @@ class BaseEnv(ABC):
             total_steps=2,
             ensure_scores_are_not_same=False,
             include_messages=True,
-            # Ensure a default path for process mode if not set by class/cli/yaml
-            data_path_to_save_groups="output_groups.jsonl",
-            use_wandb=False,  # Typically disable wandb for simple processing
+            data_path_to_save_groups="data/{cls.name or 'groups'}.jsonl",
+            use_wandb=True,
         )
         PROCESS_MODE_OPENAI_DEFAULT_CONFIG = OpenaiConfig(
-            model_name="gpt-4.1-nano",  # A reasonable default for processing
+            model_name="gpt-4.1-nano",
             base_url=None,
             api_key=None,
         )
         PROCESS_MODE_SERVER_MANAGER_DEFAULT_CONFIG = ServerManagerConfig(
-            slurm=False,  # Usually run locally
+            slurm=False,
             testing=False,
         )
 
@@ -1149,26 +1148,25 @@ class BaseEnv(ABC):
         )
         openai_config_cls_new_defaults = adjust_model_defaults(
             OpenaiConfig,
-            PROCESS_MODE_OPENAI_DEFAULT_CONFIG,  # Process always uses OpenaiConfig type
+            PROCESS_MODE_OPENAI_DEFAULT_CONFIG,
         )
         server_manager_config_cls_new_defaults = adjust_model_defaults(
             ServerManagerConfig,
             PROCESS_MODE_SERVER_MANAGER_DEFAULT_CONFIG,
         )
 
-        # Define the CLI configuration class dynamically
         class CliProcessConfig(
             get_prefixed_pydantic_model(env_config_cls_new_defaults, env_full_prefix),
             get_prefixed_pydantic_model(
                 openai_config_cls_new_defaults, openai_full_prefix
             ),
-            server_manager_config_cls_new_defaults,  # Uses adjusted defaults
+            server_manager_config_cls_new_defaults,
             Cmd,
         ):
             """
             Configuration for the process command.
             Supports overrides via YAML config file and CLI arguments.
-            Order of precedence: CLI > YAML > Class Defaults > Process Mode Defaults.
+            Order of precedence: CLI > YAML > Process Mode Defaults > `config_init` defaults.
             """
 
             config: str | None = Field(
@@ -1198,7 +1196,7 @@ class BaseEnv(ABC):
                 cli_passed_flags = get_double_dash_flags()
 
                 # --- Configuration Merging ---
-                # Priority: CLI > YAML > Class Defaults > Process Mode Defaults
+                # Priority: CLI > YAML > Process Mode Defaults > `config_init` defaults
 
                 # 1. Environment Configuration
                 env_config_dict = merge_dicts(
@@ -1264,7 +1262,6 @@ class BaseEnv(ABC):
                 # Create the environment instance
                 env = cls(
                     config=env_config,
-                    # Use the resolved configs (single or list)
                     server_configs=openai_configs,
                     slurm=server_manager_config.slurm,
                     testing=server_manager_config.testing,
