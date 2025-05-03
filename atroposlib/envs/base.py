@@ -1212,9 +1212,7 @@ class BaseEnv(ABC):
                         default_openai_config_.model_dump(),  # Default OpenaiConfig (or from class init)
                         PROCESS_MODE_OPENAI_DEFAULT_CONFIG.model_dump(),  # Process Mode Defaults
                         yaml_oai_config,
-                        extract_namespace(
-                            cli_passed_flags, openai_full_prefix
-                        ),  # CLI args
+                        extract_namespace(cli_passed_flags, openai_full_prefix),
                     )
                 else:
                     openai_config_dict = {}
