@@ -681,19 +681,7 @@ class BaseEnv(ABC):
                 f"{self.config.rollout_server_url}/status-env",
                 json={"env_id": self.env_id},
             ) as resp:
-                try:
-                    # Raise an exception for bad status codes (4xx or 5xx)
-                    resp.raise_for_status()
-                    # Attempt to parse the response as JSON
-                    self.status_dict = await resp.json()
-                except Exception as e:
-                    # Handle HTTP errors (raised by raise_for_status)
-                    error_text = await resp.text()  # Read the response text for logging
-                    logger.error(
-                        f"Error fetching status from rollout server. Status: {e.status}, Message: {e.message}. Response: {error_text}"  # noqa: E501
-                    )
-                    # Re-raise the exception to allow the @retry decorator to handle it
-                    raise
+                self.status_dict = await resp.json()
                 new_weight = self.status_dict["env_weight"]
                 max_num_workers = self.config.max_num_workers
                 if max_num_workers == -1:
