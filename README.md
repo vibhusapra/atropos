@@ -167,9 +167,15 @@ pre-commit install
   You should edit the config_init section of the environment file you want ([For example, in GSM8K Environment](https://github.com/NousResearch/atropos/blob/main/environments/gsm8k_server.py#L53)) to point to a running VLLM or SGLang inference server as well as any other configuration changes you'd like to make, such as the group size, then:
 
    ```bash
-   # Start the API server and run the GSM8K environment
-   run-api & python environments/gsm8k_server.py serve \
-       --slurm false
+   # Start the API server
+   run-api
+   ```
+   In a separate terminal, start the GSM8K environment microservice
+   ```bash
+   python environments/gsm8k_server.py serve --openai.model_name Qwen/Qwen2.5-1.5B-Instruct --slurm false
+   # alternatively
+   # python environments/gsm8k_server.py serve --config configs/example.yaml
+   # python environments/gsm8k_server.py serve --config configs/example.yaml --env.group_size 8 # cli args override config settings
    ```
 3. **Query the the API (Optional)**
 
