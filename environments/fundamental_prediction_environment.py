@@ -60,7 +60,7 @@ class FundamentalPredictionEnv(BaseEnv):
     def config_init(self) -> Tuple[BaseEnvConfig, List[OpenaiConfig]]:
         env_config = BaseEnvConfig(
             tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-            group_size=32,
+            group_size=16,
             use_wandb=True,
             max_num_workers=128,
             rollout_server_url="http://localhost:8000",
