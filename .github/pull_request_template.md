@@ -14,10 +14,10 @@
 ---
 
 ## 📝 General Information
-<!-- For non-environment PRs -->
 ### Description
-<!-- Briefly describe the changes introduced by this pull request. -->
+<!-- Briefly describe the changes or additions introduced by this pull request. -->
 
+<!-- For non-environment PRs -->
 ### Related Issues
 <!-- Link any relevant issues here. Use "Closes #issue_number" to automatically close issues. -->
 
@@ -43,7 +43,6 @@
 | **Dataset Needed?** | <!-- No / Yes (link & license) --> |
 | **External Deps** | <!-- Extra pip packages, system libs, etc. --> |
 | **Environmental Variables** | <!-- variable name(s) --> |
-| **Expected Episode Length** | <!-- e.g. 128 timesteps --> |
 | **Compute Footprint Estimate** | <!-- "<1 GB RAM, <1 min CPU verification" or similar --> |
 
 ## 🧪 Zero-Training Test Results
@@ -66,7 +65,5 @@
 - [ ] I have made corresponding changes to the documentation
 - [ ] My changes generate no new warnings
 - [ ] New and existing unit tests pass locally with my changes
-
-<!-- For Environment PRs only -->
 - [ ] Docstrings added for all new public classes / functions
 - [ ] If .env vars required, did you add it to the .env.example in repo root?
