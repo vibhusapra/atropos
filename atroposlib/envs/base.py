@@ -1000,7 +1000,9 @@ class BaseEnv(ABC):
                     extract_namespace(cli_passed_flags, openai_full_prefix),
                 )  # CLI args
                 yaml_oai_config = yaml_config.get(OPENAI_NAMESPACE, {})
-                if oai_cli_passed_args or yaml_oai_config:
+                if isinstance(default_server_configs, ServerBaseline) and (
+                    oai_cli_passed_args or yaml_oai_config
+                ):
                     raise ValueError(
                         "ServerBaseline is not compatible with OpenAI-namespaced CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
                     )
@@ -1115,7 +1117,7 @@ class BaseEnv(ABC):
         # Get the base default configurations from the specific environment class
         (
             default_env_config,
-            default_openai_config,
+            default_server_configs,
         ) = cls.config_init()
 
         # Define namespace prefixes
@@ -1192,19 +1194,21 @@ class BaseEnv(ABC):
                     extract_namespace(cli_passed_flags, openai_full_prefix),
                 )  # CLI args
                 yaml_oai_config = yaml_config.get(OPENAI_NAMESPACE, {})
-                if oai_cli_passed_args or yaml_oai_config:
+                if isinstance(default_server_configs, ServerBaseline) and (
+                    oai_cli_passed_args or yaml_oai_config
+                ):
                     raise ValueError(
                         "ServerBaseline is not compatible with OpenAI-namespaced CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
                     )
 
                 if (
-                    isinstance(default_openai_config, list)
-                    and len(default_openai_config) == 1
+                    isinstance(default_server_configs, list)
+                    and len(default_server_configs) == 1
                 ):
                     # can't use the same var name because it shadows the class variable and we get an error
-                    default_openai_config_ = default_openai_config[0]
+                    default_openai_config_ = default_server_configs[0]
                 else:
-                    default_openai_config_ = default_openai_config
+                    default_openai_config_ = default_server_configs
                 if isinstance(yaml_oai_config, list) and len(yaml_oai_config) == 1:
                     yaml_oai_config = yaml_oai_config[0]
                 if isinstance(default_openai_config_, OpenaiConfig) and isinstance(
@@ -1253,7 +1257,7 @@ class BaseEnv(ABC):
                 # Determine the final server_configs, handling single, multiple servers, and overrides.
 
                 openai_configs = resolve_openai_configs(
-                    default_server_configs=default_openai_config,
+                    default_server_configs=default_server_configs,
                     openai_config_dict=openai_config_dict,
                     yaml_config=yaml_config,
                     cli_passed_flags=cli_passed_flags,
