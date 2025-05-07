@@ -174,8 +174,8 @@ pre-commit install
    ```bash
    python environments/gsm8k_server.py serve --openai.model_name Qwen/Qwen2.5-1.5B-Instruct --slurm false
    # alternatively
-   # python environments/gsm8k_server.py serve --config configs/example.yaml
-   # python environments/gsm8k_server.py serve --config configs/example.yaml --env.group_size 8 # cli args override config settings
+   # python environments/gsm8k_server.py serve --config environments/configs/example.yaml
+   # python environments/gsm8k_server.py serve --config environments/configs/example.yaml --env.group_size 8 # cli args override corresponding config settings
    ```
 3. **Query the the API (Optional)**
 

@@ -996,6 +996,13 @@ class BaseEnv(ABC):
                 # Get CLI flags passed with double dashes (e.g., --env--foo bar)
                 cli_passed_flags = get_double_dash_flags()
 
+                if cli_passed_flags and isinstance(
+                    default_server_configs, ServerBaseline
+                ):
+                    raise ValueError(
+                        "ServerBaseline currently does not support CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
+                    )
+
                 # --- Configuration Merging ---
                 # Priority: CLI > YAML > Class Defaults
 
@@ -1181,6 +1188,13 @@ class BaseEnv(ABC):
 
                 # Get CLI flags passed with double dashes
                 cli_passed_flags = get_double_dash_flags()
+
+                if cli_passed_flags and isinstance(
+                    default_openai_config, ServerBaseline
+                ):
+                    raise ValueError(
+                        "ServerBaseline currently does not support CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
+                    )
 
                 # --- Configuration Merging ---
                 # Priority: CLI > YAML > Process Mode Defaults > `config_init` defaults
