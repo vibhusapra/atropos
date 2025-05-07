@@ -60,16 +60,13 @@
 
 ## ✅ Developer & Reviewer Checklist
 <!-- Common checklist for all PR types - adapt as needed for your PR type -->
-- [ ] My code follows the style guidelines of this project
+- [ ] Code follows project style (black, isort, flake8 pass with pre-commit)
 - [ ] I have performed a self-review of my own code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
 - [ ] My changes generate no new warnings
 - [ ] New and existing unit tests pass locally with my changes
 
-<!-- For RL Environment PRs only -->
-- [ ] Code follows project style (black, isort, flake8 pass with pre-commit)
+<!-- For Environment PRs only -->
 - [ ] Docstrings added for all new public classes / functions
 - [ ] If .env vars required, did you add it to the .env.example in repo root?
-- [ ] Automatic rollout script (`scripts/run_smoke_test.py`) runs without training and reproduces the metrics above
-- [ ] I have made corresponding changes to the documentation to include my environment 
