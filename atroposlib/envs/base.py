@@ -939,17 +939,6 @@ class BaseEnv(ABC):
         # Get the default configurations defined by the specific environment class
         default_env_config, default_server_configs = cls.config_init()
 
-        # Determine a default OpenaiConfig instance for merging purposes,
-        # even if the actual default is ServerBaseline or a list.
-        # This allows overriding with OpenAI settings via CLI/YAML consistently.
-        default_openai_config = OpenaiConfig()  # Base default
-        if isinstance(default_server_configs, OpenaiConfig):
-            default_openai_config = default_server_configs
-        elif isinstance(default_server_configs, list) and default_server_configs:
-            # If the default is a list, use the first item if it's OpenaiConfig
-            if isinstance(default_server_configs[0], OpenaiConfig):
-                default_openai_config = default_server_configs[0]
-
         # Define namespace prefixes for CLI arguments and YAML keys
         env_full_prefix = f"{ENV_NAMESPACE}{NAMESPACE_SEP}"
         openai_full_prefix = f"{OPENAI_NAMESPACE}{NAMESPACE_SEP}"
@@ -996,13 +985,6 @@ class BaseEnv(ABC):
                 # Get CLI flags passed with double dashes (e.g., --env--foo bar)
                 cli_passed_flags = get_double_dash_flags()
 
-                if cli_passed_flags and isinstance(
-                    default_server_configs, ServerBaseline
-                ):
-                    raise ValueError(
-                        "ServerBaseline currently does not support CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
-                    )
-
                 # --- Configuration Merging ---
                 # Priority: CLI > YAML > Class Defaults
 
@@ -1014,15 +996,22 @@ class BaseEnv(ABC):
                 )
 
                 # 2. OpenAI Configuration (used for potential overrides)
+                oai_cli_passed_args = (
+                    extract_namespace(cli_passed_flags, openai_full_prefix),
+                )  # CLI args
                 yaml_oai_config = yaml_config.get(OPENAI_NAMESPACE, {})
+                if oai_cli_passed_args or yaml_oai_config:
+                    raise ValueError(
+                        "ServerBaseline is not compatible with OpenAI-namespaced CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
+                    )
                 if (
-                    isinstance(default_openai_config, list)
-                    and len(default_openai_config) == 1
+                    isinstance(default_server_configs, list)
+                    and len(default_server_configs) == 1
                 ):
                     # can't use the same var name because it shadows the class variable and we get an error
-                    default_openai_config_ = default_openai_config[0]
+                    default_openai_config_ = default_server_configs[0]
                 else:
-                    default_openai_config_ = default_openai_config
+                    default_openai_config_ = default_server_configs
                 if isinstance(yaml_oai_config, list) and len(yaml_oai_config) == 1:
                     yaml_oai_config = yaml_oai_config[0]
                 if isinstance(default_openai_config_, OpenaiConfig) and isinstance(
@@ -1031,9 +1020,7 @@ class BaseEnv(ABC):
                     openai_config_dict = merge_dicts(
                         default_openai_config_.model_dump(),  # Default OpenaiConfig (or from class init)
                         yaml_oai_config,
-                        extract_namespace(
-                            cli_passed_flags, openai_full_prefix
-                        ),  # CLI args
+                        oai_cli_passed_args,
                     )
                 else:
                     openai_config_dict = {}
@@ -1189,13 +1176,6 @@ class BaseEnv(ABC):
                 # Get CLI flags passed with double dashes
                 cli_passed_flags = get_double_dash_flags()
 
-                if cli_passed_flags and isinstance(
-                    default_openai_config, ServerBaseline
-                ):
-                    raise ValueError(
-                        "ServerBaseline currently does not support CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
-                    )
-
                 # --- Configuration Merging ---
                 # Priority: CLI > YAML > Process Mode Defaults > `config_init` defaults
 
@@ -1208,6 +1188,15 @@ class BaseEnv(ABC):
                 )
 
                 # 2. OpenAI Configuration
+                oai_cli_passed_args = (
+                    extract_namespace(cli_passed_flags, openai_full_prefix),
+                )  # CLI args
+                yaml_oai_config = yaml_config.get(OPENAI_NAMESPACE, {})
+                if oai_cli_passed_args or yaml_oai_config:
+                    raise ValueError(
+                        "ServerBaseline is not compatible with OpenAI-namespaced CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
+                    )
+
                 if (
                     isinstance(default_openai_config, list)
                     and len(default_openai_config) == 1
@@ -1216,7 +1205,6 @@ class BaseEnv(ABC):
                     default_openai_config_ = default_openai_config[0]
                 else:
                     default_openai_config_ = default_openai_config
-                yaml_oai_config = yaml_config.get(OPENAI_NAMESPACE, {})
                 if isinstance(yaml_oai_config, list) and len(yaml_oai_config) == 1:
                     yaml_oai_config = yaml_oai_config[0]
                 if isinstance(default_openai_config_, OpenaiConfig) and isinstance(
