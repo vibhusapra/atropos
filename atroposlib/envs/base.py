@@ -1101,7 +1101,7 @@ class BaseEnv(ABC):
             total_steps=2,
             ensure_scores_are_not_same=False,
             include_messages=True,
-            data_path_to_save_groups="data/{cls.name or 'groups'}.jsonl",
+            data_path_to_save_groups=f"data/{cls.name or 'groups'}.jsonl",
             use_wandb=True,
         )
         PROCESS_MODE_OPENAI_DEFAULT_CONFIG = OpenaiConfig(
