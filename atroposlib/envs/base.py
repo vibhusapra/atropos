@@ -411,6 +411,7 @@ class BaseEnv(ABC):
             )
             if self.curr_step > 0:
                 self.load_checkpoint()
+            break
 
     async def get_server_info(self):
         """
