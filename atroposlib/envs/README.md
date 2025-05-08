@@ -4,6 +4,10 @@ The `BaseEnv` class (located in `trajectoryhandler/envs/base.py`) provides a fou
 
 ## Design philosophy
 
+Every environment in Atropos is a microservice that generates rollout data async from whatever trainer you attach to it. Environments (possibly many at once) send data to the [Atropos API server](https://github.com/NousResearch/atropos/tree/main/atroposlib/api) which sequesters rollout data. Your trainer of choice grabs batches of data from the API and backpropagates.
+
+![image](https://github.com/user-attachments/assets/171d21f2-bbd8-41cb-a56a-35ec30ee4efc)
+
 Unlike other popular alternatives like Gymnasium which model environments as [MDPs](https://arxiv.org/abs/2412.05265), we think about environments as dataloaders and do not make any assumptions about how a trajectory is produced. For multi-agent for example, this means our design is agnostic to [AEC](https://pettingzoo.farama.org/api/aec/) vs. [POSG](https://pettingzoo.farama.org/api/parallel/) - both are supported out of the box.
 To achieve this generality, our environment abstraction deviates from other open source alternatives in several key ways.
 
