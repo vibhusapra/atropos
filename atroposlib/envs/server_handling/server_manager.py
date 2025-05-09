@@ -95,7 +95,7 @@ class ServerManager:
                     )
                 )
             self.servers = [OpenAIServer(config) for config in openai_configs]
-        if not slurm:
+        elif not slurm:
             self.servers = [OpenAIServer(config) for config in configs]
         else:
             nodelist = (
