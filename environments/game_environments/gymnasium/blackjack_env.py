@@ -1,17 +1,13 @@
 import json
 import logging
-import os
 import random
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import gymnasium
 import numpy as np
-import yaml
 from tqdm.asyncio import tqdm_asyncio
 
-from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataGroup
-from atroposlib.envs.reward_fns import registry
-from atroposlib.envs.reward_fns.combined_reward import CombinedReward
+from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataGroup, EvalHandlingEnum
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 from atroposlib.utils.tool_call_parser import parse_tool_call
 
@@ -31,8 +27,6 @@ class BlackjackEnvConfig(BaseEnvConfig):
     debug_mode: bool = False
     group_size: int = 16
     mc_samples: int = 3  # lowish K for MC value estimation
-    reward_functions: List[Union[str, Dict[str, Any]]] = []
-    environment_reward_weight: float = 0.5
 
 
 class BlackjackScoredDataGroup(ScoredDataGroup):
@@ -88,8 +82,6 @@ class BlackjackEnv(BaseEnv):
             }
         ]
 
-        self.reward_function = self._initialize_reward_function()
-
         tools_json = json.dumps(self.tools)
         self.system_prompt = (
             "You are an AI agent playing Blackjack who uses extreme long chains of thought "
@@ -107,54 +99,6 @@ class BlackjackEnv(BaseEnv):
             '<tool_call>\n{"arguments": {"action": "stick"}, "name": "take_action"}\n</tool_call>\n\n'
             "Remember to carefully consider the probabilities and optimal strategy for Blackjack."
         )
-
-    def _initialize_reward_function(self):
-        """Initialize the reward function for scoring based on self.config.reward_functions."""
-        if hasattr(self.config, "reward_functions") and self.config.reward_functions:
-            reward_configs = self.config.reward_functions
-            logger.info(
-                f"[_initialize_reward_function] Initializing with reward_functions "
-                f"from config: {reward_configs}"
-            )
-
-            if not reward_configs:
-                logger.warning(
-                    "[_initialize_reward_function] reward_functions list is empty "
-                    "after access. No reward function will be active."
-                )
-                return None
-
-            if len(reward_configs) == 1:
-                try:
-                    logger.debug(
-                        f"[_initialize_reward_function] Creating single reward function from: {reward_configs[0]}"
-                    )
-                    return registry.create(reward_configs[0])
-                except Exception as e:
-                    logger.error(
-                        f"[_initialize_reward_function] Failed to create single reward function from config "
-                        f"{reward_configs[0]}: {e}",
-                        exc_info=True,
-                    )
-                    return None
-            elif len(reward_configs) > 1:
-                try:
-                    logger.debug(
-                        f"[_initialize_reward_function] Creating CombinedReward function from: {reward_configs}"
-                    )
-                    return CombinedReward(rewards=reward_configs)
-                except Exception as e:
-                    logger.error(
-                        f"[_initialize_reward_function] Failed to create CombinedReward function from configs: {e}",
-                        exc_info=True,
-                    )
-                    return None
-        else:
-            logger.info(
-                "[_initialize_reward_function] No 'reward_functions' key in config or it's empty. "
-                "No specific reward function (like format/tool_call) will be active."
-            )
-        return None
 
     def _get_or_create_episode(self, seed: int) -> EpisodeState:
         if seed not in self.episodes:
@@ -180,60 +124,32 @@ class BlackjackEnv(BaseEnv):
         episode_seed: int,
     ) -> float:
         """
-        Calculates a combined score for a single agent response based on environment and format rewards.
+        Calculates a score for a single agent response based purely on environment reward
+        and a penalty for invalid action format.
         """
-        format_or_tool_call_reward_component = 0.0
         current_env_reward = env_reward
 
         if parsed_action == -1:
-            current_env_reward -= 0.5
+            current_env_reward -= 0.5  # Penalty for invalid action format
             logger.debug(
                 f"[_score_response Seed: {episode_seed}] Penalty applied to env_reward for "
-                f"invalid action format (-0.5). Current env_reward: {current_env_reward}"
+                f"invalid action format (-0.5). Current env_reward: {current_env_reward:.4f}"
             )
 
-        if self.reward_function:
-            messages_for_reward_func: List[List[Dict[str, str]]] = [
-                [{"role": "agent", "content": response_text}]
-            ]
-            try:
-                reward_func_output_list = self.reward_function(messages_for_reward_func)
-                if reward_func_output_list and len(reward_func_output_list) > 0:
-                    format_or_tool_call_reward_component = reward_func_output_list[0]
-                    logger.debug(
-                        f"[_score_response Seed: {episode_seed}] Output from self.reward_function "
-                        f"(e.g., format/tool_call): {format_or_tool_call_reward_component:.4f}"
-                    )
-                else:
-                    logger.warning(
-                        f"[_score_response Seed: {episode_seed}] self.reward_function returned "
-                        f"empty or invalid result: {reward_func_output_list}"
-                    )
-            except Exception as e:
-                logger.error(
-                    f"[_score_response Seed: {episode_seed}] Error calculating reward via "
-                    f"self.reward_function: {e}",
-                    exc_info=True,
-                )
-        else:
-            logger.debug(
-                f"[_score_response Seed: {episode_seed}] No self.reward_function active, "
-                f"format_or_tool_call_reward_component is 0."
-            )
+        # env_w = self.config.environment_reward_weight # Removed, env reward is 100%
 
-        env_w = self.config.environment_reward_weight
-
-        combined_score = (
-            env_w * current_env_reward
-        ) + format_or_tool_call_reward_component
+        # combined_score = ( # Simplified
+        #     env_w * current_env_reward
+        # ) + format_or_tool_call_reward_component
+        final_score = current_env_reward
 
         logger.debug(
             f"[_score_response Seed: {episode_seed}] Score Calculation: "
-            f"EnvReward(raw): {env_reward:.4f}, EnvReward(adj): {current_env_reward:.4f} (w:{env_w:.2f}), "
-            f"OutputFromRewardFunctions (already weighted): {format_or_tool_call_reward_component:.4f}, "
-            f"==> CombinedScore: {combined_score:.4f}"
+            f"EnvReward(raw): {env_reward:.4f}, EnvReward(adj for invalid): {current_env_reward:.4f} "
+            # f"OutputFromRewardFunctions (already weighted): {format_or_tool_call_reward_component:.4f}, " # Removed
+            f"==> Final Score (from env): {final_score:.4f}"
         )
-        return combined_score
+        return final_score
 
     def _parse_tool_call(self, response: str) -> int:
         if not response:
@@ -923,79 +839,46 @@ class BlackjackEnv(BaseEnv):
         await super().wandb_log(wandb_metrics)
 
     @classmethod
-    def config_init(
-        cls, config_name_or_path: Optional[str] = None
-    ) -> Tuple[BlackjackEnvConfig, List[OpenaiConfig]]:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        default_config_filename = "blackjack_default.yaml"
-        if config_name_or_path is None:
-            cfg_path = os.path.join(current_dir, "configs", default_config_filename)
-        elif os.path.isabs(config_name_or_path):
-            cfg_path = config_name_or_path
-        else:
-            config_filename = config_name_or_path + (
-                ".yaml" if not config_name_or_path.endswith(".yaml") else ""
+    def config_init(cls) -> Tuple[BlackjackEnvConfig, List[OpenaiConfig]]:
+        env_config = BlackjackEnvConfig(
+            # Fields from fundamental_prediction_environment.py's BaseEnvConfig init:
+            tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
+            group_size=16, # Matches BlackjackEnvConfig default as well
+            use_wandb=True,
+            max_num_workers=128,
+            rollout_server_url="http://localhost:8000",
+            total_steps=2000,
+            batch_size=1024,
+            steps_per_eval=20,
+            max_token_length=1024 * 16,
+            inference_weight=1.0,
+            wandb_name="fundamental_metric_prediction", # Strict: Use value from fundamental_prediction
+            data_path_to_save_groups=None,
+            eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
+            eval_limit_ratio=0.1,
+
+            # BlackjackEnvConfig specific fields (those NOT in BaseEnvConfig from fundamental_prediction)
+            # using their defined defaults from BlackjackEnvConfig:
+            env_name="Blackjack-v1", # Default from BlackjackEnvConfig
+            temperature=0.7,       # Default from BlackjackEnvConfig
+            top_p=0.9,             # Default from BlackjackEnvConfig
+            max_turns=5,           # Default from BlackjackEnvConfig
+            thinking_active=True,  # Default from BlackjackEnvConfig
+            eval_episodes=100,     # Default from BlackjackEnvConfig
+            max_think_chars_history=3000, # Default from BlackjackEnvConfig
+            max_trajectory_tokens=24576, # Default from BlackjackEnvConfig
+            debug_mode=False,      # Default from BlackjackEnvConfig
+            mc_samples=3,          # Default from BlackjackEnvConfig
+        )
+        server_configs = [
+            OpenaiConfig(
+                model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
+                base_url="http://localhost:9004/v1",
+                api_key="x",
+                num_requests_for_eval=256, # From fundamental_prediction_environment.py
             )
-            cfg_path = os.path.join(current_dir, "configs", config_filename)
-
-        try:
-            if os.path.exists(cfg_path):
-                with open(cfg_path) as f:
-                    raw_yaml_data = yaml.safe_load(f) or {}
-                logger.info(f"Loaded config from {cfg_path}")
-            else:
-                logger.warning(
-                    f"Config not found at {cfg_path}. Using default settings."
-                )
-                raw_yaml_data = {}
-
-            env_conf_data = raw_yaml_data.copy()
-            server_configs_list = env_conf_data.pop("server_configs", [])
-            if "blackjack" in env_conf_data:
-                env_conf_data.update(env_conf_data.pop("blackjack"))
-            env_conf = BlackjackEnvConfig(**env_conf_data)
-
-            server_confs = []
-            for sc_data in server_configs_list:
-                if not isinstance(sc_data, dict):
-                    continue
-                params = sc_data.copy()
-                params["api_key"] = params.get(
-                    "api_key", os.getenv("OPENAI_API_KEY", "x")
-                )
-                params["model_name"] = params.get(
-                    "model_name",
-                    os.getenv(
-                        "OPENAI_MODEL", "NousResearch/DeepHermes-3-Llama-3-8B-Preview"
-                    ),
-                )
-                params["base_url"] = params.get(
-                    "base_url", os.getenv("OPENAI_API_BASE", "http://localhost:9004/v1")
-                )
-                server_confs.append(OpenaiConfig(**params))
-            if not server_confs:
-                server_confs = [
-                    OpenaiConfig(
-                        model_name=os.getenv(
-                            "OPENAI_MODEL",
-                            "NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-                        ),
-                        base_url=os.getenv(
-                            "OPENAI_API_BASE", "http://localhost:9004/v1"
-                        ),
-                        api_key=os.getenv("OPENAI_API_KEY", "x"),
-                    )
-                ]
-            return env_conf, server_confs
-        except Exception as e:
-            logger.error(f"Error loading config from {cfg_path}: {e}")
-            return BlackjackEnvConfig(), [
-                OpenaiConfig(
-                    model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-                    base_url="http://localhost:9004/v1",
-                    api_key="x",
-                )
-            ]
+        ]
+        return env_config, server_configs
 
     def _truncate_thinking_for_history(self, response_text: str, max_chars: int) -> str:
         """Helper to truncate the <think> block of a response for message history."""
