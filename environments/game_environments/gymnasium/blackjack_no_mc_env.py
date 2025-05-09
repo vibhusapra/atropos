@@ -645,11 +645,11 @@ class BlackjackEnv(BaseEnv):
 
         episode_summary_metrics = {
             "seed": seed,
-            "total_env_reward": ep.total_env_reward,
+            "total_reward": ep.total_env_reward,
             "num_correct_actions": ep.num_correct_actions,
             "num_total_actions": ep.num_total_actions,
             "game_outcome": game_outcome,
-            "num_steps_in_episode": len(ep.actions),
+            "num_steps": len(ep.actions),
         }
         self.completed_episode_metrics_buffer.append(episode_summary_metrics)
 
@@ -1054,8 +1054,8 @@ class BlackjackEnv(BaseEnv):
 
         episode_metrics = {
             "seed": seed,
-            "total_env_reward": 0.0,
-            "num_turns": 0,
+            "total_reward": 0.0,
+            "num_steps": 0,
             "num_correct_actions": 0,
             "num_invalid_actions": 0,
             "actions_chosen": [],
@@ -1063,7 +1063,7 @@ class BlackjackEnv(BaseEnv):
         }
 
         for turn in range(max_turns):
-            episode_metrics["num_turns"] = turn + 1
+            episode_metrics["num_steps"] = turn + 1
             messages_for_prompt = ep.message_history.copy()
 
             if self.config.thinking_active:
@@ -1130,10 +1130,7 @@ class BlackjackEnv(BaseEnv):
                 reward = -1.0
                 obs = None
 
-            ep.actions.append(env_action)
-            ep.step_rewards.append(reward)
-
-            ep.total_env_reward += reward
+            episode_metrics["total_reward"] += reward
 
             if term or trunc:
                 episode_metrics["game_outcome"] = int(reward)
@@ -1207,10 +1204,10 @@ class BlackjackEnv(BaseEnv):
         num_completed_episodes = len(valid_metrics)
 
         avg_total_env_reward = (
-            sum(m["total_env_reward"] for m in valid_metrics) / num_completed_episodes
+            sum(m["total_reward"] for m in valid_metrics) / num_completed_episodes
         )
         avg_num_turns = (
-            sum(m["num_turns"] for m in valid_metrics) / num_completed_episodes
+            sum(m["num_steps"] for m in valid_metrics) / num_completed_episodes
         )
 
         total_correct_actions = sum(m["num_correct_actions"] for m in valid_metrics)
@@ -1244,8 +1241,8 @@ class BlackjackEnv(BaseEnv):
         total_parsed_actions_in_eval = len(all_chosen_actions)
 
         self.eval_metrics = [
-            ("eval/avg_total_env_reward", avg_total_env_reward),
-            ("eval/avg_num_turns", avg_num_turns),
+            ("eval/avg_total_reward", avg_total_env_reward),
+            ("eval/avg_num_steps", avg_num_turns),
             ("eval/action_accuracy", action_accuracy),
             ("eval/invalid_action_rate", invalid_action_rate),
             ("eval/win_rate", win_rate),
@@ -1295,7 +1292,7 @@ class BlackjackEnv(BaseEnv):
 
             avg_ep_env_reward = (
                 sum(
-                    m["total_env_reward"] for m in self.completed_episode_metrics_buffer
+                    m["total_reward"] for m in self.completed_episode_metrics_buffer
                 )
                 / num_episodes_in_buffer
             )
@@ -1314,8 +1311,7 @@ class BlackjackEnv(BaseEnv):
 
             avg_ep_num_steps = (
                 sum(
-                    m["num_steps_in_episode"]
-                    for m in self.completed_episode_metrics_buffer
+                    m["num_steps"] for m in self.completed_episode_metrics_buffer
                 )
                 / num_episodes_in_buffer
             )
@@ -1347,7 +1343,7 @@ class BlackjackEnv(BaseEnv):
             )
 
             wandb_metrics[
-                f"{self.wandb_prepend or 'blackjack'}_train/avg_episode_env_reward"
+                f"{self.wandb_prepend or 'blackjack'}_train/avg_episode_reward"
             ] = avg_ep_env_reward
             wandb_metrics[
                 f"{self.wandb_prepend or 'blackjack'}_train/avg_episode_action_accuracy"

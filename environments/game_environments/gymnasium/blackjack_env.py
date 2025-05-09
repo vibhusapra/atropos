@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+BlackjackEnv: Trainer environment for Gymnasium Blackjack
+
+This wraps Gymnasium's Blackjack-v1 environment to train an LLM via a best-of-n pattern
+using function-call style actions. Extends BaseEnv.
+
+Uses Monte Carlo sampling to estimate the value of the current state, similar to VinePPO
+"""
+
 import json
 import logging
 import random
@@ -26,7 +36,7 @@ class BlackjackEnvConfig(BaseEnvConfig):
     max_trajectory_tokens: int = 24576
     debug_mode: bool = False
     group_size: int = 16
-    mc_samples: int = 3  # lowish K for MC value estimation
+    mc_samples: int = 3
 
 
 class BlackjackScoredDataGroup(ScoredDataGroup):
@@ -130,23 +140,17 @@ class BlackjackEnv(BaseEnv):
         current_env_reward = env_reward
 
         if parsed_action == -1:
-            current_env_reward -= 0.5  # Penalty for invalid action format
+            current_env_reward -= 0.5
             logger.debug(
                 f"[_score_response Seed: {episode_seed}] Penalty applied to env_reward for "
                 f"invalid action format (-0.5). Current env_reward: {current_env_reward:.4f}"
             )
 
-        # env_w = self.config.environment_reward_weight # Removed, env reward is 100%
-
-        # combined_score = ( # Simplified
-        #     env_w * current_env_reward
-        # ) + format_or_tool_call_reward_component
         final_score = current_env_reward
 
         logger.debug(
             f"[_score_response Seed: {episode_seed}] Score Calculation: "
             f"EnvReward(raw): {env_reward:.4f}, EnvReward(adj for invalid): {current_env_reward:.4f} "
-            # f"OutputFromRewardFunctions (already weighted): {format_or_tool_call_reward_component:.4f}, " # Removed
             f"==> Final Score (from env): {final_score:.4f}"
         )
         return final_score
@@ -235,7 +239,6 @@ class BlackjackEnv(BaseEnv):
                             f"State s was already terminal. Value is 0."
                         )
                         all_rollout_returns.append(0.0)
-                        # This means V(s_terminal) = 0, which is correct.
                         break
                 else:
                     rollout_reward_for_this_sample = 0.0
@@ -484,10 +487,9 @@ class BlackjackEnv(BaseEnv):
                         )
                         alt_value_next.append(0.0)
                 else:
-                    alt_value_next.append(0.0)  # V(terminal) = 0
+                    alt_value_next.append(0.0)
 
             for i in range(G):
-                # Advantage = R_combined + gamma * V_raw(s') - V_raw(s) (gamma=1)
                 advantage_i = alt_combined_rewards[i] + alt_value_next[i] - value_t
                 alt_advantages.append(advantage_i)
                 logger.debug(
@@ -841,9 +843,8 @@ class BlackjackEnv(BaseEnv):
     @classmethod
     def config_init(cls) -> Tuple[BlackjackEnvConfig, List[OpenaiConfig]]:
         env_config = BlackjackEnvConfig(
-            # Fields from fundamental_prediction_environment.py's BaseEnvConfig init:
             tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-            group_size=16, # Matches BlackjackEnvConfig default as well
+            group_size=16,
             use_wandb=True,
             max_num_workers=128,
             rollout_server_url="http://localhost:8000",
@@ -852,30 +853,28 @@ class BlackjackEnv(BaseEnv):
             steps_per_eval=20,
             max_token_length=1024 * 16,
             inference_weight=1.0,
-            wandb_name="fundamental_metric_prediction", # Strict: Use value from fundamental_prediction
+            wandb_name="fundamental_metric_prediction",
             data_path_to_save_groups=None,
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
             eval_limit_ratio=0.1,
 
-            # BlackjackEnvConfig specific fields (those NOT in BaseEnvConfig from fundamental_prediction)
-            # using their defined defaults from BlackjackEnvConfig:
-            env_name="Blackjack-v1", # Default from BlackjackEnvConfig
-            temperature=0.7,       # Default from BlackjackEnvConfig
-            top_p=0.9,             # Default from BlackjackEnvConfig
-            max_turns=5,           # Default from BlackjackEnvConfig
-            thinking_active=True,  # Default from BlackjackEnvConfig
-            eval_episodes=100,     # Default from BlackjackEnvConfig
-            max_think_chars_history=3000, # Default from BlackjackEnvConfig
-            max_trajectory_tokens=24576, # Default from BlackjackEnvConfig
-            debug_mode=False,      # Default from BlackjackEnvConfig
-            mc_samples=3,          # Default from BlackjackEnvConfig
+            env_name="Blackjack-v1",
+            temperature=0.7,
+            top_p=0.9,
+            max_turns=5,
+            thinking_active=True,
+            eval_episodes=100,
+            max_think_chars_history=3000,
+            max_trajectory_tokens=24576,
+            debug_mode=False,
+            mc_samples=3,
         )
         server_configs = [
             OpenaiConfig(
                 model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
                 base_url="http://localhost:9004/v1",
                 api_key="x",
-                num_requests_for_eval=256, # From fundamental_prediction_environment.py
+                num_requests_for_eval=256,
             )
         ]
         return env_config, server_configs
@@ -973,7 +972,7 @@ class BlackjackEnv(BaseEnv):
                 and original_step_data.get("tokens")
                 and original_step_data.get("masks")
                 and original_step_data.get("seed") is not None
-                and original_step_data.get("parsed_actions") is not None # Specific to MC version
+                and original_step_data.get("parsed_actions") is not None
             ):
                 logger.warning(
                     f"[_ensure_trajectory_token_limit] Step {step_idx} in MC env "
@@ -981,7 +980,6 @@ class BlackjackEnv(BaseEnv):
                 )
                 continue
 
-            # Initial token calculation from original data
             max_initial_tokens = 0
             if original_step_data["tokens"]:
                 max_initial_tokens = max(
@@ -1017,7 +1015,7 @@ class BlackjackEnv(BaseEnv):
                 for alt_idx in range(num_alternatives):
                     alt_msg_list = working_messages[alt_idx]
                     num_preserved_at_end = 0
-                    if len(alt_msg_list) > 1 and alt_msg_list[-1]["role"] in ["agent", "assistant"] + UNMASKED_ROLES:
+                    if len(alt_msg_list) > 1 and alt_msg_list[-1]["role"] in ["agent", "assistant"]:
                         num_preserved_at_end = 1
                         if len(alt_msg_list) > 2 and alt_msg_list[-2]["role"] == "environment":
                             num_preserved_at_end = 2
@@ -1031,7 +1029,7 @@ class BlackjackEnv(BaseEnv):
                             available_to_pop >= 2 and
                             len(alt_msg_list) > 2 and
                             alt_msg_list[1]["role"] == "environment" and
-                            alt_msg_list[2]["role"] in ["agent", "assistant"] + UNMASKED_ROLES
+                            alt_msg_list[2]["role"] in ["agent", "assistant"]
                         )
                         if can_pop_pair:
                             target_pop_counts_per_alt.append(2)
@@ -1088,7 +1086,7 @@ class BlackjackEnv(BaseEnv):
                     "tokens": working_tokens,
                     "masks": working_masks,
                     "scores": original_step_data.get("scores"),
-                    "parsed_actions": original_step_data.get("parsed_actions") # MC version specific
+                    "parsed_actions": original_step_data.get("parsed_actions")
                 }
                 filtered_trajectory.append(updated_step_data)
                 logger.info(
