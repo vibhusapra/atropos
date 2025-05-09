@@ -190,7 +190,7 @@ Environments come with detailed logging and reporting support, runs track comple
 
 ---
 
-## Debugging Tools
+## Testing and Debugging Tools
 
 The trajectory-handler provides several debugging tools to help environment developers test and understand their environments locally without requiring the full distributed infrastructure.
 
