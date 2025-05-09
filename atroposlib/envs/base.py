@@ -387,8 +387,10 @@ class BaseEnv(ABC):
         # Now register the env...
         while True:
             data = await self._register_env()
-            if data['status'] != "success":
-                logging.warning(f"Waiting to register the env due to status {data['status']}")
+            if data["status"] != "success":
+                logging.warning(
+                    f"Waiting to register the env due to status {data['status']}"
+                )
                 await asyncio.sleep(1)
                 continue
             self.env_id = data["env_id"]
