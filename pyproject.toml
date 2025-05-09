@@ -19,6 +19,7 @@ dependencies = [
     "math-verify==0.7.0",
     "jinja2",
     "nltk",
+    "rich",
     "polars",
     "aiofiles",
     "jsonlines",
