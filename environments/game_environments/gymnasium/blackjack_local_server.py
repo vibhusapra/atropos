@@ -5,7 +5,8 @@ import os
 import random
 
 from dotenv import load_dotenv
-from environments.game_environments.gymnasium.blackjack_env import BlackjackEnv
+from environments.game_environments.gymnasium.blackjack_env import BlackjackEnv, BlackjackEnvConfig
+from atroposlib.envs.base import OpenaiConfig, EvalHandlingEnum
 
 load_dotenv()
 
@@ -13,51 +14,72 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description="Blackjack environment local server")
-    parser.add_argument(
-        "--config",
-        type=str,
-        default="blackjack_local",
-        help="Configuration file name (without .yaml extension, relative to "
-        "envs/gymnasium/configs), or full path to a YAML file.",
-    )
-    return parser.parse_args()
+# def parse_arguments(): # Removed
+#     parser = argparse.ArgumentParser(description="Blackjack environment local server")
+#     parser.add_argument(
+#         "--config",
+#         type=str,
+#         default="blackjack_local",
+#         help="Configuration file name (without .yaml extension, relative to "
+#         "envs/gymnasium/configs), or full path to a YAML file.",
+#     )
+#     return parser.parse_args()
 
 
 async def main():
-    logger.info("Starting Blackjack environment server")
+    logger.info("Starting Blackjack environment local debug runner")
 
-    args = parse_arguments()
+    # args = parse_arguments() # Removed
 
-    # Determine the config name/path for config_init
-    # config_init expects the name relative to its own configs dir, or an absolute path
-    config_input = args.config
-    if not os.path.isabs(config_input) and not config_input.endswith(".yaml"):
-        # Assume it's a name relative to the blackjack env's config dir
-        config_name_or_path = config_input
-        logger.info(f"Using relative config name: {config_name_or_path}")
-    else:
-        # It's likely an absolute path or path relative to cwd
-        config_name_or_path = os.path.abspath(config_input)
-        logger.info(f"Using absolute config path: {config_name_or_path}")
+    # Removed logic for config_name_or_path and BlackjackEnv.config_init
 
-    # Use the environment's config_init method to load configurations
-    try:
-        config, server_configs = BlackjackEnv.config_init(config_name_or_path)
-        logger.info("Configuration loaded successfully via BlackjackEnv.config_init")
-        logger.debug(f"Loaded Env Config: {config}")
-        logger.debug(f"Loaded Server Configs: {server_configs}")
-    except Exception as e:
-        logger.exception(
-            f"Failed to load configuration using BlackjackEnv.config_init: {e}"
+    # Create hardcoded configurations for local debugging
+    env_config = BlackjackEnvConfig(
+        # BaseEnvConfig fields, tailored for debug
+        tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
+        group_size=1,  # Debug single generation path
+        use_wandb=False,
+        wandb_name="blackjack_local_debug", # Explicitly set for debug
+        max_num_workers=1,
+        rollout_server_url="http://localhost:8000", # Standard default
+        total_steps=1,
+        batch_size=1, # Consistent with 1 step, 1 worker, group_size 1
+        steps_per_eval=0, # No eval steps needed
+        max_token_length=1024 * 4, # Reduced for faster local debugging if necessary
+        inference_weight=1.0,
+        data_path_to_save_groups=None,
+        eval_handling=EvalHandlingEnum.NONE, # No evaluation in this script
+        eval_limit_ratio=0.0,
+
+        # BlackjackEnvConfig specific fields (from blackjack_env.py's definition or defaults)
+        env_name="Blackjack-v1",
+        temperature=0.2, # Lower temperature for more deterministic debug output
+        top_p=0.9,       # Standard default
+        max_turns=5,     # Standard default
+        thinking_active=True,
+        eval_episodes=0, # No evaluation episodes
+        max_think_chars_history=3000,
+        max_trajectory_tokens=24576,
+        debug_mode=True, # Enable debug logging from the environment
+        mc_samples=1,    # With group_size=1, this means 1 MC rollout for V(s)
+    )
+
+    server_configs = [
+        OpenaiConfig(
+            model_name="gpt-4.1-mini", # Ensure this is locally available if not mocked
+            base_url="https://api.openai.com/v1", # Explicitly set OpenAI base URL
+            api_key=os.getenv("OPENAI_API_KEY"), # Use env var or default
+            num_requests_for_eval=0, # No eval requests
         )
-        return  # Cannot proceed without config
+    ]
+    logger.info("Using hardcoded debug configuration.")
+    logger.debug(f"Env Config: {env_config}")
+    logger.debug(f"Server Configs: {server_configs}")
 
     # Create and set up the environment using the loaded configs
     try:
         env = BlackjackEnv(
-            config=config,
+            config=env_config,
             server_configs=server_configs,
             slurm=False,  # Explicitly false for local testing
         )
