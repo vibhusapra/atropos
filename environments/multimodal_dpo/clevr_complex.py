@@ -8,7 +8,6 @@ from datasets import load_dataset
 
 from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataGroup
 from atroposlib.type_definitions import GameHistory, Item
-
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
 
