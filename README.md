@@ -164,7 +164,7 @@ pre-commit install
 
 2. **Run an Example Environment**
 
-  You should edit the config_init section of the environment file you want ([For example, in GSM8K Environment](https://github.com/NousResearch/atropos/blob/main/environments/gsm8k_server.py#L53)) to point to a running VLLM or SGLang inference server as well as any other configuration changes you'd like to make, such as the group size, then:
+  You should edit the config_init section of the environment file you want ([For example, in GSM8K Environment](https://github.com/NousResearch/atropos/blob/main/environments/gsm8k_server.py#L53)) to point to a running VLLM or SGLang inference server as well as any other [configuration changes](CONFIG.md) you'd like to make, such as the group size, then:
 
    ```bash
    # Start the API server
@@ -177,9 +177,10 @@ pre-commit install
    # python environments/gsm8k_server.py serve --config environments/configs/example.yaml
    # python environments/gsm8k_server.py serve --config environments/configs/example.yaml --env.group_size 8 # cli args override corresponding config settings
    ```
-3. **Query the the API (Optional)**
+3. **Grabbing Rollouts**
 
-  If you want to just query the api, start getting rollouts, and not use a trainer, see [API Docs](https://github.com/NousResearch/atropos/tree/main/atroposlib/api) to explore the REST API interface that this API exposes, if you plan to use a trainer, skip to step 4.
+  If you want to just start getting rollouts, and not use a trainer, see the [debug section](#testing-and-debugging-tools)
+  for help getting started with the available tools, we recommend starting with process or view-run
 
 4. **Training Your Model**
    - Follow our [training example guide](example_trainer/README.md) for detailed instructions
