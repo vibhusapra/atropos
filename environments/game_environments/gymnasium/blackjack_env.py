@@ -11,7 +11,7 @@ Uses Monte Carlo sampling to estimate the value of the current state, similar to
 import json
 import logging
 import random
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium
 import numpy as np
@@ -1025,7 +1025,8 @@ class BlackjackEnv(BaseEnv):
 
             if num_alternatives == 0:
                 logger.warning(
-                    f"[_ensure_trajectory_token_limit] Step {step_idx} in MC env has no alternatives after copying. Skipping."
+                    f"[_ensure_trajectory_token_limit] Step {step_idx} in MC env has no alternatives"
+                    " after copying. Skipping."
                 )
                 continue
 
@@ -1109,7 +1110,8 @@ class BlackjackEnv(BaseEnv):
                 working_masks = temp_new_alt_masks
                 max_current_tokens = max_tokens_after_this_trunc
                 logger.debug(
-                    f"[_ensure_trajectory_token_limit] MC env: Step {step_idx}, after uniform pop of {min_pop_this_round}, "
+                    f"[_ensure_trajectory_token_limit] MC env: Step {step_idx}, "
+                    f"after uniform pop of {min_pop_this_round}, "
                     f"max tokens: {max_current_tokens}"
                 )
 
