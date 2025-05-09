@@ -25,7 +25,10 @@ from atroposlib.envs.base import (
     ScoredDataGroup,
 )
 from atroposlib.type_definitions import Message
-from atroposlib.utils.tokenize_for_trainer import UNMASKED_ROLES, tokenize_for_trainer
+from atroposlib.utils.tokenize_for_trainer import (
+    UNMASKED_ROLES,
+    tokenize_for_trainer_multistep,
+)
 from atroposlib.utils.tool_call_parser import parse_tool_call
 
 logger = logging.getLogger(__name__)
@@ -491,7 +494,7 @@ class BlackjackEnv(BaseEnv):
                 step_msgs.append({"role": "agent", "content": response})
 
                 try:
-                    out = tokenize_for_trainer(self.tokenizer, step_msgs)
+                    out = tokenize_for_trainer_multistep(self.tokenizer, step_msgs)
                     alt_tokens.append(out["tokens"])
                     alt_masks.append(out["masks"])
                     alt_messages.append(step_msgs)
@@ -1598,7 +1601,7 @@ class BlackjackEnv(BaseEnv):
                         break
 
                     try:
-                        tokenized_alt = tokenize_for_trainer(
+                        tokenized_alt = tokenize_for_trainer_multistep(
                             self.tokenizer, working_messages[alt_idx]
                         )
                         temp_new_alt_tokens.append(tokenized_alt["tokens"])
