@@ -18,7 +18,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import gymnasium
 from tqdm.asyncio import tqdm_asyncio
 
-from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataGroup, EvalHandlingEnum
+from atroposlib.envs.base import (
+    BaseEnv,
+    BaseEnvConfig,
+    EvalHandlingEnum,
+    OpenaiConfig,
+    ScoredDataGroup,
+)
 from atroposlib.type_definitions import Message
 from atroposlib.utils.tokenize_for_trainer import UNMASKED_ROLES, tokenize_for_trainer
 from atroposlib.utils.tool_call_parser import parse_tool_call
@@ -1291,9 +1297,7 @@ class BlackjackEnv(BaseEnv):
             num_episodes_in_buffer = len(self.completed_episode_metrics_buffer)
 
             avg_ep_env_reward = (
-                sum(
-                    m["total_reward"] for m in self.completed_episode_metrics_buffer
-                )
+                sum(m["total_reward"] for m in self.completed_episode_metrics_buffer)
                 / num_episodes_in_buffer
             )
 
@@ -1310,9 +1314,7 @@ class BlackjackEnv(BaseEnv):
             )
 
             avg_ep_num_steps = (
-                sum(
-                    m["num_steps"] for m in self.completed_episode_metrics_buffer
-                )
+                sum(m["num_steps"] for m in self.completed_episode_metrics_buffer)
                 / num_episodes_in_buffer
             )
 
@@ -1375,38 +1377,37 @@ class BlackjackEnv(BaseEnv):
         env_config = BlackjackEnvConfig(
             # Fields from fundamental_prediction_environment.py's BaseEnvConfig init:
             tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-            group_size=16, # From Base, as not in BJ no_mc config's direct definition
+            group_size=16,  # From Base, as not in BJ no_mc config's direct definition
             use_wandb=True,
             max_num_workers=128,
             rollout_server_url="http://localhost:8000",
             total_steps=2000,
-            batch_size=1024, # Matches BlackjackEnvConfig (no_mc) default as well
+            batch_size=1024,  # Matches BlackjackEnvConfig (no_mc) default as well
             steps_per_eval=20,
             max_token_length=1024 * 16,
             inference_weight=1.0,
-            wandb_name="fundamental_metric_prediction", # Strict: Use value from fundamental_prediction
+            wandb_name="fundamental_metric_prediction",  # Strict: Use value from fundamental_prediction
             data_path_to_save_groups=None,
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
             eval_limit_ratio=0.1,
-
             # BlackjackEnvConfig (no_mc version) specific fields (those NOT in BaseEnvConfig from fundamental_prediction)
             # using their defined defaults from BlackjackEnvConfig (no_mc):
-            env_name="Blackjack-v1",        # Default from BlackjackEnvConfig (no_mc)
-            temperature=0.7,            # Default from BlackjackEnvConfig (no_mc)
-            top_p=0.9,                  # Default from BlackjackEnvConfig (no_mc)
-            max_turns=5,                # Default from BlackjackEnvConfig (no_mc)
-            thinking_active=True,       # Default from BlackjackEnvConfig (no_mc)
-            eval_episodes=100,          # Default from BlackjackEnvConfig (no_mc)
-            max_think_chars_history=3000, # Default from BlackjackEnvConfig (no_mc)
-            max_trajectory_tokens=24576,# Default from BlackjackEnvConfig (no_mc)
-            debug_mode=False,           # Default from BlackjackEnvConfig (no_mc)
+            env_name="Blackjack-v1",  # Default from BlackjackEnvConfig (no_mc)
+            temperature=0.7,  # Default from BlackjackEnvConfig (no_mc)
+            top_p=0.9,  # Default from BlackjackEnvConfig (no_mc)
+            max_turns=5,  # Default from BlackjackEnvConfig (no_mc)
+            thinking_active=True,  # Default from BlackjackEnvConfig (no_mc)
+            eval_episodes=100,  # Default from BlackjackEnvConfig (no_mc)
+            max_think_chars_history=3000,  # Default from BlackjackEnvConfig (no_mc)
+            max_trajectory_tokens=24576,  # Default from BlackjackEnvConfig (no_mc)
+            debug_mode=False,  # Default from BlackjackEnvConfig (no_mc)
         )
         server_configs = [
             OpenaiConfig(
                 model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
                 base_url="http://localhost:9004/v1",
                 api_key="x",
-                num_requests_for_eval=256, # From fundamental_prediction_environment.py
+                num_requests_for_eval=256,  # From fundamental_prediction_environment.py
             )
         ]
         return env_config, server_configs
@@ -1513,7 +1514,8 @@ class BlackjackEnv(BaseEnv):
                 original_step_data.get("messages")
                 and original_step_data.get("tokens")
                 and original_step_data.get("masks")
-                and original_step_data.get("seed") is not None # seed is mandatory for new group
+                and original_step_data.get("seed")
+                is not None  # seed is mandatory for new group
             ):
                 logger.warning(
                     f"[_ensure_trajectory_token_limit] Step {step_idx} "
@@ -1525,9 +1527,18 @@ class BlackjackEnv(BaseEnv):
             # Ensure tokens are lists of integers before calling len
             max_initial_tokens = 0
             if original_step_data["tokens"]:
-                 max_initial_tokens = max(
-                    len(alt_tokens) for alt_tokens in original_step_data["tokens"] if isinstance(alt_tokens, list)
-                 ) if any(isinstance(alt_tokens, list) for alt_tokens in original_step_data["tokens"]) else 0
+                max_initial_tokens = (
+                    max(
+                        len(alt_tokens)
+                        for alt_tokens in original_step_data["tokens"]
+                        if isinstance(alt_tokens, list)
+                    )
+                    if any(
+                        isinstance(alt_tokens, list)
+                        for alt_tokens in original_step_data["tokens"]
+                    )
+                    else 0
+                )
 
             if max_initial_tokens <= self.config.max_trajectory_tokens:
                 filtered_trajectory.append(original_step_data)
@@ -1544,14 +1555,22 @@ class BlackjackEnv(BaseEnv):
 
             # Prepare working copies for modification
             # Ensure deep copies for lists of dicts if dicts are modified, but here we pop from list of dicts.
-            working_messages = [msgs_list.copy() for msgs_list in original_step_data["messages"] or []]
-            working_tokens = [tkns_list.copy() for tkns_list in original_step_data["tokens"] or []]
-            working_masks = [msks_list.copy() for msks_list in original_step_data["masks"] or []]
+            working_messages = [
+                msgs_list.copy() for msgs_list in original_step_data["messages"] or []
+            ]
+            working_tokens = [
+                tkns_list.copy() for tkns_list in original_step_data["tokens"] or []
+            ]
+            working_masks = [
+                msks_list.copy() for msks_list in original_step_data["masks"] or []
+            ]
             max_current_tokens = max_initial_tokens
             num_alternatives = len(working_messages)
 
-            if num_alternatives == 0: # Should not happen if initial checks passed
-                logger.warning(f"[_ensure_trajectory_token_limit] Step {step_idx} has no alternatives after copying. Skipping.")
+            if num_alternatives == 0:  # Should not happen if initial checks passed
+                logger.warning(
+                    f"[_ensure_trajectory_token_limit] Step {step_idx} has no alternatives after copying. Skipping."
+                )
                 continue
 
             retokenization_error_this_step = False
@@ -1563,11 +1582,19 @@ class BlackjackEnv(BaseEnv):
                     # Calculate how many initial messages (after system prompt) can be popped.
                     # Preserving: system prompt (index 0), last agent response, and its preceding env observation.
                     num_preserved_at_end = 0
-                    if len(alt_msg_list) > 1 and alt_msg_list[-1]["role"] in UNMASKED_ROLES:
+                    if (
+                        len(alt_msg_list) > 1
+                        and alt_msg_list[-1]["role"] in UNMASKED_ROLES
+                    ):
                         num_preserved_at_end = 1  # Last agent response
-                        if len(alt_msg_list) > 2 and alt_msg_list[-2]["role"] == "environment":
-                            num_preserved_at_end = 2 # Agent response + preceding env observation
-                    
+                        if (
+                            len(alt_msg_list) > 2
+                            and alt_msg_list[-2]["role"] == "environment"
+                        ):
+                            num_preserved_at_end = (
+                                2  # Agent response + preceding env observation
+                            )
+
                     # Number of messages available for popping (between system prompt and preserved end messages)
                     # Subtract 1 for the system prompt itself (which is never popped from index 0).
                     available_to_pop = len(alt_msg_list) - 1 - num_preserved_at_end
@@ -1577,20 +1604,23 @@ class BlackjackEnv(BaseEnv):
                     else:
                         # Try to pop a pair (environment, agent) if they are at list[1] and list[2]
                         can_pop_pair = (
-                            available_to_pop >= 2 and
-                            len(alt_msg_list) > 2 and # Ensure messages at index 1 and 2 exist
-                            alt_msg_list[1]["role"] == "environment" and
-                            alt_msg_list[2]["role"] in UNMASKED_ROLES
+                            available_to_pop >= 2
+                            and len(alt_msg_list) > 2
+                            and alt_msg_list[  # Ensure messages at index 1 and 2 exist
+                                1
+                            ]["role"]
+                            == "environment"
+                            and alt_msg_list[2]["role"] in UNMASKED_ROLES
                         )
                         if can_pop_pair:
                             target_pop_counts_per_alt.append(2)
-                        else: # Can pop at least 1 since available_to_pop > 0
+                        else:  # Can pop at least 1 since available_to_pop > 0
                             target_pop_counts_per_alt.append(1)
-                
+
                 positive_pop_counts = [c for c in target_pop_counts_per_alt if c > 0]
                 if not positive_pop_counts:
-                    break # No alternative can be truncated further
-                
+                    break  # No alternative can be truncated further
+
                 min_pop_this_round = min(positive_pop_counts)
 
                 # Pop messages and re-tokenize
@@ -1600,29 +1630,39 @@ class BlackjackEnv(BaseEnv):
 
                 for alt_idx in range(num_alternatives):
                     for _ in range(min_pop_this_round):
-                        if len(working_messages[alt_idx]) > 1: # Ensure there's something to pop after system
+                        if (
+                            len(working_messages[alt_idx]) > 1
+                        ):  # Ensure there's something to pop after system
                             working_messages[alt_idx].pop(1)
                         else:
                             logger.error(
                                 f"[_ensure_trajectory_token_limit] Critical error during pop for "
                                 f"alt {alt_idx}, step {step_idx}. List too short."
                             )
-                            retokenization_error_this_step = True; break
-                    if retokenization_error_this_step: break
-                    
+                            retokenization_error_this_step = True
+                            break
+                    if retokenization_error_this_step:
+                        break
+
                     try:
-                        tokenized_alt = tokenize_for_trainer(self.tokenizer, working_messages[alt_idx])
+                        tokenized_alt = tokenize_for_trainer(
+                            self.tokenizer, working_messages[alt_idx]
+                        )
                         temp_new_alt_tokens.append(tokenized_alt["tokens"])
                         temp_new_alt_masks.append(tokenized_alt["masks"])
-                        max_tokens_after_this_trunc = max(max_tokens_after_this_trunc, len(tokenized_alt["tokens"]))
+                        max_tokens_after_this_trunc = max(
+                            max_tokens_after_this_trunc, len(tokenized_alt["tokens"])
+                        )
                     except Exception as e:
                         logger.error(
                             f"[_ensure_trajectory_token_limit] Error re-tokenizing alt {alt_idx} "
                             f"in step {step_idx} after truncation: {e}"
                         )
-                        retokenization_error_this_step = True; break
-                
-                if retokenization_error_this_step: break
+                        retokenization_error_this_step = True
+                        break
+
+                if retokenization_error_this_step:
+                    break
 
                 working_tokens = temp_new_alt_tokens
                 working_masks = temp_new_alt_masks
@@ -1633,14 +1673,17 @@ class BlackjackEnv(BaseEnv):
                 )
             # End of while loop for truncation attempts
 
-            if not retokenization_error_this_step and max_current_tokens <= self.config.max_trajectory_tokens:
+            if (
+                not retokenization_error_this_step
+                and max_current_tokens <= self.config.max_trajectory_tokens
+            ):
                 updated_step_data: BlackjackScoredDataGroup = {
                     "seed": original_step_data["seed"],
                     "messages": working_messages,
                     "tokens": working_tokens,
                     "masks": working_masks,
                     "scores": original_step_data.get("scores"),
-                    "parsed_action": original_step_data.get("parsed_action")
+                    "parsed_action": original_step_data.get("parsed_action"),
                 }
                 filtered_trajectory.append(updated_step_data)
                 logger.info(

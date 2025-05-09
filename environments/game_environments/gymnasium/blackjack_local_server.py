@@ -4,8 +4,12 @@ import os
 import random
 
 from dotenv import load_dotenv
-from environments.game_environments.gymnasium.blackjack_env import BlackjackEnv, BlackjackEnvConfig
-from atroposlib.envs.base import OpenaiConfig, EvalHandlingEnum
+
+from atroposlib.envs.base import EvalHandlingEnum, OpenaiConfig
+from environments.game_environments.gymnasium.blackjack_env import (
+    BlackjackEnv,
+    BlackjackEnvConfig,
+)
 
 load_dotenv()
 
