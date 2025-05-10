@@ -34,12 +34,12 @@ def grab_exact_from_heterogeneous_queue(
     max_group_size = 0
 
     for item in queue:
-        l = len(item["tokens"])
-        lengths.append(l)
-        group_sizes.append(l)
-        total_tokens += l
-        if l > max_group_size:
-            max_group_size = l
+        length = len(item["tokens"])
+        lengths.append(length)
+        group_sizes.append(length)
+        total_tokens += length
+        if length > max_group_size:
+            max_group_size = length
 
     if total_tokens < batch_size:
         return None, queue
