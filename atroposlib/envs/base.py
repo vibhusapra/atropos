@@ -350,7 +350,7 @@ class BaseEnv(ABC):
                     async with session.get(
                         f"{self.config.rollout_server_url}/wandb_info"
                     ) as resp:
-                        data = await resp.json()
+                        data = await parse_http_response(resp, logger)
                         self.wandb_group = data["group"]
                         self.wandb_project = data["project"]
                 if self.wandb_project is None:
@@ -378,7 +378,7 @@ class BaseEnv(ABC):
                         "weight": self.config.inference_weight,
                     },
                 ) as resp:
-                    data = await resp.json()
+                    data = await parse_http_response(resp, logger)
                     return data
         except Exception as e:
             logger.error(f"Error registering env: {e}")
