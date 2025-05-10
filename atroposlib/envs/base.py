@@ -35,6 +35,7 @@ from atroposlib.utils.cli import (
     get_prefixed_pydantic_model,
     merge_dicts,
 )
+from atroposlib.utils.io import parse_http_response
 from atroposlib.utils.metrics import get_std_min_max_avg
 
 from ..type_definitions import Item, Message
@@ -349,7 +350,7 @@ class BaseEnv(ABC):
                     async with session.get(
                         f"{self.config.rollout_server_url}/wandb_info"
                     ) as resp:
-                        data = await resp.json()
+                        data = await parse_http_response(resp, logger)
                         self.wandb_group = data["group"]
                         self.wandb_project = data["project"]
                 if self.wandb_project is None:
@@ -377,7 +378,7 @@ class BaseEnv(ABC):
                         "weight": self.config.inference_weight,
                     },
                 ) as resp:
-                    data = await resp.json()
+                    data = await parse_http_response(resp, logger)
                     return data
         except Exception as e:
             logger.error(f"Error registering env: {e}")
@@ -418,7 +419,7 @@ class BaseEnv(ABC):
         """
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.config.rollout_server_url}/info") as resp:
-                data = await resp.json()
+                data = await parse_http_response(resp, logger)
                 if data["batch_size"] != -1:
                     # update the batch size
                     self.config.batch_size = data["batch_size"]
@@ -701,7 +702,7 @@ class BaseEnv(ABC):
                 f"{self.config.rollout_server_url}/status-env",
                 json={"env_id": self.env_id},
             ) as resp:
-                self.status_dict = await resp.json()
+                self.status_dict = await parse_http_response(resp, logger)
                 new_weight = self.status_dict["env_weight"]
                 max_num_workers = self.config.max_num_workers
                 if max_num_workers == -1:
