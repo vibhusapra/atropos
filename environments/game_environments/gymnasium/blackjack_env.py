@@ -11,6 +11,7 @@ Uses Monte Carlo sampling to estimate the value of the current state, similar to
 import json
 import logging
 import random
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium
@@ -143,29 +144,27 @@ class BlackjackEnv(BaseEnv):
         Calculates a score for a single agent response based purely on environment reward
         and a penalty for invalid action format.
         """
-        current_env_reward = env_reward
-
+        current_env_reward = env_reward * 1.0
+        # Action is good?
         if parsed_action == -1:
-            current_env_reward -= 0.5
-            logger.debug(
-                f"[_score_response Seed: {episode_seed}] Penalty applied to env_reward for "
-                f"invalid action format (-0.5). Current env_reward: {current_env_reward:.4f}"
-            )
-
-        final_score = current_env_reward
-
-        logger.debug(
-            f"[_score_response Seed: {episode_seed}] Score Calculation: "
-            f"EnvReward(raw): {env_reward:.4f}, EnvReward(adj for invalid): {current_env_reward:.4f} "
-            f"==> Final Score (from env): {final_score:.4f}"
-        )
-        # Try to get a valid tool call from the response
-        tool_call = self._parse_tool_call(response_text)
-        if tool_call == -1:
-            final_score -= 0.5
+            current_env_reward -= 0.2
         else:
-            final_score += 0.5
-        return final_score
+            current_env_reward += 0.2
+
+        # Check the thinking tags exist, with valid content
+        # 1 and only 1 thinking tag
+        match = re.search(r"<think>(.*?)</think>", response_text)
+        if match:
+            thinking_content = match.group(1)
+            if thinking_content:
+                current_env_reward += 0.2
+            # Check there's actually valid content (not just whitespace)
+            if not thinking_content.strip():
+                current_env_reward -= 0.2
+        else:
+            current_env_reward -= 0.2
+
+        return current_env_reward
 
     def _parse_tool_call(self, response: str) -> int:
         if not response:
