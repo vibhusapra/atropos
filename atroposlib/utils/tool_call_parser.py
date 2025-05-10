@@ -84,22 +84,3 @@ def parse_tool_call(
     except (json.JSONDecodeError, Exception) as json_error:
         logger.error(f"Failed to parse tool call: {json_error}", exc_info=True)
         return "-ERROR-", {}, True
-
-
-def format_tool_call_for_hangman(tool_name: str, arguments: Dict[str, Any]) -> str:
-    """
-    Format a parsed tool call into the format expected by Hangman.
-
-    Args:
-        tool_name: The name of the tool to call
-        arguments: Dictionary of arguments
-
-    Returns:
-        The formatted tool call string (e.g., "[letter]" or "[word]")
-    """
-    if tool_name == "guess_letter" and "letter" in arguments:
-        return f"[{arguments['letter']}]"
-    elif tool_name == "guess_word" and "word" in arguments:
-        return f"[{arguments['word']}]"
-    else:
-        return "-ERROR-"
