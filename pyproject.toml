@@ -19,6 +19,7 @@ dependencies = [
     "math-verify==0.7.0",
     "jinja2",
     "nltk",
+    "rich",
     "polars",
     "aiofiles",
     "jsonlines",
@@ -31,6 +32,7 @@ dependencies = [
 run-api = "atroposlib.cli.run_api:main"
 inference-node-wandb-watcher = "atroposlib.cli.inference_node_wandb_watcher:main"
 view-run = "atroposlib.cli.view_run:main"
+view-run-multimodal = "atroposlib.cli.view_run_multimodal:main"
 atropos-sft-gen = "atroposlib.cli.sft:main"
 atropos-dpo-gen = "atroposlib.cli.dpo:main"
 
