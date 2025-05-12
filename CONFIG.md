@@ -65,3 +65,4 @@ Configuration for individual OpenAI-compatible API servers (including local SGLa
 | `num_requests_for_eval`    | `int`        | `64`      | Maximum number of concurrent requests for evaluation.                                                   |
 | `model_name`               | `str`        | `default` | The model name to use. Required for both OpenAI and local models (e.g., `"gpt-4"`, `"NousResearch/..."`). |
 | `rolling_buffer_length`    | `int`        | `1000`    | Length of the rolling buffer to store server metrics (like request timings, attempts).                   |
+| `n_kwarg_is_ignored`       | `bool`       | `False`   | If the n kwarg is ignored by the API you are using, set this to True.                                   |
