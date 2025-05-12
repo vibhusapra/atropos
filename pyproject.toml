@@ -24,7 +24,6 @@ dependencies = [
     "polars",
     "aiofiles",
     "jsonlines",
-    "torch",
     "pydantic-cli",
     "hf_transfer",
 ]
@@ -41,6 +40,9 @@ atropos-dpo-gen = "atroposlib.cli.dpo:main"
 all = [
     "atroposlib[dev,examples]"
 ]
+rewardfns = [
+    "torch"
+]
 dev = [
     "pytest",
     "pytest-asyncio",
@@ -49,10 +51,11 @@ dev = [
     "flake8",
     "isort",
     "mypy",
-    'rich',
+    "rich",
 ]
 examples = [
-    "gradio"
+    "gradio",
+    "atroposlib[rewardfns]"
 ]
 
 [build-system]
