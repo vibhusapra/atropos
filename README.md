@@ -22,16 +22,17 @@
   </a>
 </div>
 
-Atropos is a Language Model Reinforcement Learning Environments framework for collecting and evaluating LLM trajectories through diverse environments including:
+---
 
+## What is Atropos?
+Atropos is an environment microservice framework for async RL with LLMs.
+
+Atropos encompasses both environments, which are set up as services, and a trajectory API for the environments to send data to and for the trainer to pull batches from.
+
+![image](https://github.com/user-attachments/assets/8ce52994-b219-49d6-970c-58a477f36151)
 <div align="center">
 
-| Environment Type          | Examples                                   | Purpose                                            |
-|---------------------------|--------------------------------------------|----------------------------------------------------|
-| 📚 Dataset environments   | GSM8K, MMLU                                | Evaluate and improve LLM performance on static data|
-| 🎮 Online environments    | Crosswords, Hangman                        | Train LLMs through interactive game-based learning |
-| 🤖 RLAIF and RLHF         | LLM Judge/Reward Models                    | Fine-tune LLMs using human feedback and alignment  |
-| 🔄 Multi-Turn RL          | deepresearch, internal tool calling        | Train LLMs on complex multi-step interactions      |
+  *Here is a diagram of how Atropos' components can interact with a trainer & inference server to complete the RL loop (trainer & inference engine not included with the atropos package)*
 
 </div>
 
@@ -44,6 +45,19 @@ Atropos is a robust, scalable framework for **Reinforcement Learning Environment
 - **Diverse Environment Integration:** Manages many varied environment types concurrently for heterogeneous, multi-modal training.
 
 The goal: provide a flexible, scalable, and standardized platform to accelerate LLM-based RL research across diverse, interactive settings.
+
+The framework supports collecting, distributing and evaluating LLM trajectories through diverse environments including:
+
+<div align="center">
+
+| Environment Type          | Examples                                   | Purpose                                            |
+|---------------------------|--------------------------------------------|----------------------------------------------------|
+| 📚 Dataset environments   | GSM8K, MMLU                                | Evaluate and improve LLM performance on static data|
+| 🎮 Online environments    | Crosswords, Hangman                        | Train LLMs through interactive game-based learning |
+| 🤖 RLAIF and RLHF         | LLM Judge/Reward Models                    | Fine-tune LLMs using human feedback and alignment  |
+| 🔄 Multi-Turn RL          | deepresearch, internal tool calling        | Train LLMs on complex multi-step interactions      |
+
+</div>
 
 ## 🎉 Upcoming Atropos Hackathon: LLM RL Environments
 
