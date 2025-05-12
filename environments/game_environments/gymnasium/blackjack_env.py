@@ -27,7 +27,7 @@ from atroposlib.envs.base import (
     OpenaiConfig,
     ScoredDataGroup,
 )
-from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer_multistep
+from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 from atroposlib.utils.tool_call_parser import parse_tool_call
 
 logger = logging.getLogger(__name__)
@@ -435,7 +435,7 @@ class BlackjackEnv(BaseEnv):
                         next_state_msgs_i = current_state_plus_response
                     alt_next_state_msgs.append(next_state_msgs_i)
 
-                    tokenized_i = tokenize_for_trainer_multistep(
+                    tokenized_i = tokenize_for_trainer(
                         self.tokenizer, next_state_msgs_i
                     )
                     alt_tokens.append(tokenized_i["tokens"])
@@ -1066,7 +1066,7 @@ class BlackjackEnv(BaseEnv):
                         break
 
                     try:
-                        tokenized_alt = tokenize_for_trainer_multistep(
+                        tokenized_alt = tokenize_for_trainer(
                             self.tokenizer, working_messages[alt_idx]
                         )
                         temp_new_alt_tokens.append(tokenized_alt["tokens"])
