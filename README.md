@@ -25,9 +25,16 @@
 ---
 
 ## What is Atropos?
-Atropos is an environments provider and framework for RL Training. Atropos encompasses both the environments used during the RL Training and sets them up as services and a trajectory API for the environments to send data created by the environments to and collate them for the trainer to pull batches created by the environments.
+Atropos is an environment microservice framework for async RL with LLMs.
+
+Atropos encompasses both environments, which are set up as services, and a trajectory API for the environments to send data to and for the trainer to pull batches from.
 
 ![image](https://github.com/user-attachments/assets/8ce52994-b219-49d6-970c-58a477f36151)
+<div align="center">
+
+  *Here is a diagram of how Atropos' components can interact with a trainer & inference server to complete the RL loop (trainer & inference engine not included with the atropos package)*
+
+</div>
 
 Atropos is a robust, scalable framework for **Reinforcement Learning Environments with LLMs**. Key features:
 
