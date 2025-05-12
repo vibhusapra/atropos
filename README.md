@@ -22,16 +22,17 @@
   </a>
 </div>
 
-Atropos is a Language Model Reinforcement Learning Environments framework for collecting and evaluating LLM trajectories through diverse environments including:
+---
 
+## What is Atropos?
+Atropos is an environment microservice framework for async RL with LLMs.
+
+Atropos encompasses both environments, which are set up as services, and a trajectory API for the environments to send data to and for the trainer to pull batches from.
+
+![image](https://github.com/user-attachments/assets/8ce52994-b219-49d6-970c-58a477f36151)
 <div align="center">
 
-| Environment Type          | Examples                                   | Purpose                                            |
-|---------------------------|--------------------------------------------|----------------------------------------------------|
-| 📚 Dataset environments   | GSM8K, MMLU                                | Evaluate and improve LLM performance on static data|
-| 🎮 Online environments    | Crosswords, Hangman                        | Train LLMs through interactive game-based learning |
-| 🤖 RLAIF and RLHF         | LLM Judge/Reward Models                    | Fine-tune LLMs using human feedback and alignment  |
-| 🔄 Multi-Turn RL          | deepresearch, internal tool calling        | Train LLMs on complex multi-step interactions      |
+  *Here is a diagram of how Atropos' components can interact with a trainer & inference server to complete the RL loop (trainer & inference engine not included with the atropos package)*
 
 </div>
 
@@ -44,6 +45,19 @@ Atropos is a robust, scalable framework for **Reinforcement Learning Environment
 - **Diverse Environment Integration:** Manages many varied environment types concurrently for heterogeneous, multi-modal training.
 
 The goal: provide a flexible, scalable, and standardized platform to accelerate LLM-based RL research across diverse, interactive settings.
+
+The framework supports collecting, distributing and evaluating LLM trajectories through diverse environments including:
+
+<div align="center">
+
+| Environment Type          | Examples                                   | Purpose                                            |
+|---------------------------|--------------------------------------------|----------------------------------------------------|
+| 📚 Dataset environments   | GSM8K, MMLU                                | Evaluate and improve LLM performance on static data|
+| 🎮 Online environments    | Crosswords, Hangman                        | Train LLMs through interactive game-based learning |
+| 🤖 RLAIF and RLHF         | LLM Judge/Reward Models                    | Fine-tune LLMs using human feedback and alignment  |
+| 🔄 Multi-Turn RL          | deepresearch, internal tool calling        | Train LLMs on complex multi-step interactions      |
+
+</div>
 
 ## 🎉 Upcoming Atropos Hackathon: LLM RL Environments
 
@@ -164,16 +178,23 @@ pre-commit install
 
 2. **Run an Example Environment**
 
-  You should edit the config_init section of the environment file you want ([For example, in GSM8K Environment](https://github.com/NousResearch/atropos/blob/main/environments/gsm8k_server.py#L53)) to point to a running VLLM or SGLang inference server as well as any other configuration changes you'd like to make, such as the group size, then:
+  You should edit the config_init section of the environment file you want ([For example, in GSM8K Environment](https://github.com/NousResearch/atropos/blob/main/environments/gsm8k_server.py#L53)) to point to a running VLLM or SGLang inference server as well as any other [configuration changes](CONFIG.md) you'd like to make, such as the group size, then:
 
    ```bash
-   # Start the API server and run the GSM8K environment
-   run-api & python environments/gsm8k_server.py serve \
-       --slurm false
+   # Start the API server
+   run-api
    ```
-3. **Query the the API (Optional)**
+   In a separate terminal, start the GSM8K environment microservice
+   ```bash
+   python environments/gsm8k_server.py serve --openai.model_name Qwen/Qwen2.5-1.5B-Instruct --slurm false
+   # alternatively
+   # python environments/gsm8k_server.py serve --config environments/configs/example.yaml
+   # python environments/gsm8k_server.py serve --config environments/configs/example.yaml --env.group_size 8 # cli args override corresponding config settings
+   ```
+3. **Grabbing Rollouts**
 
-  If you want to just query the api, start getting rollouts, and not use a trainer, see [API Docs](https://github.com/NousResearch/atropos/tree/main/atroposlib/api) to explore the REST API interface that this API exposes, if you plan to use a trainer, skip to step 4.
+  If you want to just start getting rollouts, and not use a trainer, see the [debug section](#testing-and-debugging-tools)
+  for help getting started with the available tools, we recommend starting with process or view-run
 
 4. **Training Your Model**
    - Follow our [training example guide](example_trainer/README.md) for detailed instructions
@@ -190,7 +211,7 @@ Environments come with detailed logging and reporting support, runs track comple
 
 ---
 
-## Debugging Tools
+## Testing and Debugging Tools
 
 The trajectory-handler provides several debugging tools to help environment developers test and understand their environments locally without requiring the full distributed infrastructure.
 

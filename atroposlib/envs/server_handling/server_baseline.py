@@ -38,3 +38,6 @@ class APIServerConfig(ServerBaseline):
     server_type: Literal["openai"] = Field(
         default="openai", description="Type of server to use, openai or trl"
     )
+    n_kwarg_is_ignored: bool = Field(
+        default=False, description="Whether the n kwarg is ignored by this API server."
+    )

@@ -532,7 +532,8 @@ class FundamentalPredictionEnv(BaseEnv):
                 else 0
             )
             wandb_metrics["train/combined_score"] = combined_score
-        except:
+        except Exception as e:
+            print(f"Error calculating combined score: {e}")
             pass
 
         # Clear the buffers after logging

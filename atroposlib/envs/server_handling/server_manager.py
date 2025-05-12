@@ -86,8 +86,8 @@ class ServerManager:
                     )
                 )
             self.servers = [OpenAIServer(config) for config in openai_configs]
-        if not slurm:
-            self.servers = [server_class(config) for config in configs]
+        elif not slurm:
+            self.servers = [OpenAIServer(config) for config in configs]
         else:
             nodelist = (
                 os.popen(f'scontrol show hostnames {os.environ["SLURM_JOB_NODELIST"]}')
