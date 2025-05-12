@@ -305,7 +305,7 @@ class BlackjackEnv(BaseEnv):
             if sim_env is not None:
                 sim_env.close()
 
-    async def collect_trajectory(self, seed: int) -> List[BlackjackScoredDataGroup]:
+    async def _collect_trajectory(self, seed: int) -> List[BlackjackScoredDataGroup]:
         """Collect data for ONE trajectory, evaluating G alternatives per step using MC advantages."""
         G = self.config.group_size
         max_turns = self.config.max_turns or 5
@@ -664,7 +664,7 @@ class BlackjackEnv(BaseEnv):
         self, item: Tuple[int, int]
     ) -> Tuple[List[BlackjackScoredDataGroup], List[Tuple[int, int]]]:
         seed, _ = item
-        traj = await self.collect_trajectory(seed)
+        traj = await self._collect_trajectory(seed)
         if not traj:
             logger.warning(f"[Collect Trajectories] Empty trajectory for seed {seed}.")
         return traj, []
