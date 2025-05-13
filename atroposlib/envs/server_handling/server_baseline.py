@@ -2,9 +2,9 @@ import asyncio
 import collections
 import time
 from abc import ABC, abstractmethod
+from asyncio import exceptions
 from typing import Literal, Optional
 
-import exceptions
 import numpy as np
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.completion import Completion
