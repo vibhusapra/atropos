@@ -36,6 +36,8 @@ class ServerManager:
         testing=False,
     ):
         # First we check to see if it's the base server class, and if so, we need to select the appropriate server class
+        # You can't use type() to check if it's the base server class, because it's an abstract class, it'll appear as
+        # an ABCMeta, not what you're expecting.
         if inspect.isabstract(server_class):
             if not isinstance(configs, list):
                 if configs.server_type == "openai":

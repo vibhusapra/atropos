@@ -108,6 +108,9 @@ class ServerBaseline(BaseModel):
     rolling_buffer_length: int = Field(
         default=1000, description="Length of the rolling buffer to store metrics."
     )
+    server_type: Literal["openai", "trl"] = Field(
+        default="openai", description="Type of server to use, openai or trl"
+    )
 
 
 class APIServerConfig(ServerBaseline):
@@ -117,9 +120,6 @@ class APIServerConfig(ServerBaseline):
 
     api_key: Optional[str] = Field(default="", description="API key for the server.")
     base_url: Optional[str] = Field(default="", description="Base URL for the server.")
-    server_type: Literal["openai", "trl"] = Field(
-        default="openai", description="Type of server to use, openai or trl"
-    )
     n_kwarg_is_ignored: bool = Field(
         default=False, description="Whether the n kwarg is ignored by this API server."
     )
