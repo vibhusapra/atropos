@@ -4,7 +4,7 @@ import os
 import dotenv
 import pytest
 
-from atroposlib.envs.server_handling.openai_server import OpenaiConfig, OpenAIServer
+from atroposlib.envs.server_handling.openai_server import APIServerConfig, OpenAIServer
 
 
 @pytest.mark.providers
@@ -13,7 +13,7 @@ def test_openai_api_n_kwarg_ignore_discovery():
     openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
     if not openrouter_api_key:
         pytest.skip("OPENROUTER_API_KEY not set")
-    config = OpenaiConfig(
+    config = APIServerConfig(
         api_key=openrouter_api_key,
         base_url="https://openrouter.ai/api/v1",
         model_name="openai/gpt-4.1-nano",
@@ -48,7 +48,7 @@ def test_openai_api_n_kwarg_ignore_use():
     openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
     if not openrouter_api_key:
         pytest.skip("OPENROUTER_API_KEY not set")
-    config = OpenaiConfig(
+    config = APIServerConfig(
         api_key=openrouter_api_key,
         base_url="https://openrouter.ai/api/v1",
         model_name="openai/gpt-4.1-nano",
@@ -82,7 +82,7 @@ def test_openai_api_n_kwarg_supported():
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
         pytest.skip("OPENAI_API_KEY not set")
-    config = OpenaiConfig(
+    config = APIServerConfig(
         model_name="gpt-4.1-nano",
         timeout=1200,
         num_max_requests_at_once=512,

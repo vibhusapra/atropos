@@ -58,9 +58,37 @@ These methods have default implementations or are optional based on your needs:
 
 *   **`save_checkpoint(self, step, data=None)`**: The base class calls this method automatically at checkpoint intervals determined by the server. It saves the provided `data` dictionary (which you might populate with environment-specific state) to a JSON file. You can override this to customize *what* data is saved or *how* it's saved (e.g., using a different format or location), but the triggering mechanism remains automatic.
 
-*   **`@classmethod config_init(cls) -> Tuple[BaseEnvConfig, Union[ServerBaseline, List[OpenaiConfig]]]`**: This class method is used by the default `get_cli_serve_config_cls` implementation to get the initial environment configuration (`BaseEnvConfig` subclass) and server configurations (`ServerBaseline` or `List[OpenaiConfig]`) when setting up the `serve` command. The default implementation returns `cls.env_config_cls(), ServerBaseline()`. You might override this if your environment requires different default configurations or specific server setups (like multiple `OpenaiConfig` instances) when run via the CLI `serve` command.
+*   **`@classmethod config_init(cls) -> Tuple[BaseEnvConfig, Union[ServerBaseline, List[APIServerConfig]]]`**: This class method is used by the default `get_cli_serve_config_cls` implementation to get the initial environment configuration (`BaseEnvConfig` subclass) and server configurations (`ServerBaseline` or `List[APIServerConfig]`) when setting up the `serve` command. The default implementation returns `cls.env_config_cls(), ServerBaseline()`. You might override this if your environment requires different default configurations or specific server setups (like multiple `APIServerConfig` instances) when run via the CLI `serve` command.
 
 *   **`async def cleanup(self)`**: Called after each call to `handle_env`. You can implement this for any cleanup needed after processing a single item, though it's often not required.
+
+## Overrideable Class Variables
+
+These class-level variables in `BaseEnv` can be overridden in your subclass to customize its behavior:
+
+*   **`name: Optional[str]`**:
+    *   Default: `None`
+    *   Purpose: You can set a string name for your environment. This name is used by default for `wandb_name` in the `BaseEnvConfig` if not otherwise specified, influencing how runs are grouped or named in Weights & Biases. It can also be useful for general identification or logging purposes.
+
+*   **`env_config_cls: Type[BaseEnvConfig]`**:
+    *   Default: `BaseEnvConfig`
+    *   Purpose: This variable holds the Pydantic model class that will be used for your environment's configuration. If your environment requires custom configuration fields beyond what `BaseEnvConfig` offers, you should create a new class that inherits from `BaseEnvConfig` (or a subclass thereof) and assign it to `env_config_cls`. This allows the CLI and other parts of the system to correctly parse and manage your environment's specific settings.
+    ```python
+    from pydantic import Field
+    from atroposlib.envs import BaseEnv, BaseEnvConfig
+
+    class MyEnvConfig(BaseEnvConfig):
+        my_custom_param: str = Field(default="default_value", description="A custom parameter for MyEnv")
+
+    class MyEnv(BaseEnv):
+        env_config_cls = MyEnvConfig
+        name = "MyCustomEnvironment"
+        # ... other implementations
+    ```
+
+*   **`server_cls: Type[APIServer]`**:
+    *   Default: `APIServer`
+    *   Purpose: Specifies the class to be used for managing interactions with API servers (e.g., inference endpoints). Should mostly be used for developing addiitonal API interfaces, but if you need a nonstandard way of connecting with an existing API you can use this to easily slot in any modifications you need.
 
 ## Provided Functionality
 
