@@ -35,7 +35,7 @@ class APIServerConfig(ServerBaseline):
 
     api_key: Optional[str] = Field(default="", description="API key for the server.")
     base_url: Optional[str] = Field(default="", description="Base URL for the server.")
-    server_type: Literal["openai"] = Field(
+    server_type: Literal["openai", "trl"] = Field(
         default="openai", description="Type of server to use, openai or trl"
     )
     n_kwarg_is_ignored: bool = Field(

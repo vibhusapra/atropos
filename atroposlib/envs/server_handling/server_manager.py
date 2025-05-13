@@ -13,6 +13,7 @@ from atroposlib.envs.server_handling.server_baseline import (
     ServerBaseline,
 )
 from atroposlib.envs.server_handling.server_harness import ServerHarness
+from atroposlib.envs.server_handling.trl_vllm_server import TrlVllmServer
 
 
 class ServerManagerConfig(BaseModel):
@@ -36,11 +37,15 @@ class ServerManager:
             if isinstance(configs, ServerBaseline):
                 if configs.server_type == "openai":
                     server_class = OpenAIServer
+                elif configs.server_type == "trl":
+                    server_class = TrlVllmServer
                 else:
                     raise ValueError(f"Invalid server type: {configs.server_type}")
             else:
                 if configs[0].server_type == "openai":
                     server_class = OpenAIServer
+                elif configs[0].server_type == "trl":
+                    server_class = TrlVllmServer
                 else:
                     raise ValueError(f"Invalid server type: {configs[0].server_type}")
         if testing:
