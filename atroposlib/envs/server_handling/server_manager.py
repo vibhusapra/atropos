@@ -20,7 +20,7 @@ from atroposlib.envs.server_handling.trl_vllm_server import TrlVllmServer
 
 class ServerManagerConfig(BaseModel):
     slurm: bool = Field(
-        default=True, description="Whether environment is running on slurm or not."
+        default=False, description="Whether environment is running on slurm or not."
     )
     testing: bool = Field(
         default=False, description="If set to True, environment uses mock OpenAI data."
