@@ -62,6 +62,34 @@ These methods have default implementations or are optional based on your needs:
 
 *   **`async def cleanup(self)`**: Called after each call to `handle_env`. You can implement this for any cleanup needed after processing a single item, though it's often not required.
 
+## Overrideable Class Variables
+
+These class-level variables in `BaseEnv` can be overridden in your subclass to customize its behavior:
+
+*   **`name: Optional[str]`**:
+    *   Default: `None`
+    *   Purpose: You can set a string name for your environment. This name is used by default for `wandb_name` in the `BaseEnvConfig` if not otherwise specified, influencing how runs are grouped or named in Weights & Biases. It can also be useful for general identification or logging purposes.
+
+*   **`env_config_cls: Type[BaseEnvConfig]`**:
+    *   Default: `BaseEnvConfig`
+    *   Purpose: This variable holds the Pydantic model class that will be used for your environment's configuration. If your environment requires custom configuration fields beyond what `BaseEnvConfig` offers, you should create a new class that inherits from `BaseEnvConfig` (or a subclass thereof) and assign it to `env_config_cls`. This allows the CLI and other parts of the system to correctly parse and manage your environment's specific settings.
+    ```python
+    from pydantic import Field
+    from atroposlib.envs import BaseEnv, BaseEnvConfig
+
+    class MyEnvConfig(BaseEnvConfig):
+        my_custom_param: str = Field(default="default_value", description="A custom parameter for MyEnv")
+
+    class MyEnv(BaseEnv):
+        env_config_cls = MyEnvConfig
+        name = "MyCustomEnvironment"
+        # ... other implementations
+    ```
+
+*   **`server_cls: Type[APIServer]`**:
+    *   Default: `APIServer`
+    *   Purpose: Specifies the class to be used for managing interactions with API servers (e.g., inference endpoints). Should mostly be used for developing addiitonal API interfaces, but if you need a nonstandard way of connecting with an existing API you can use this to easily slot in any modifications you need.
+
 ## Provided Functionality
 
 `BaseEnv` provides several helpful features:
