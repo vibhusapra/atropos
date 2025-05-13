@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from atroposlib.envs.server_handling.openai_server import OpenAIServer
 from atroposlib.envs.server_handling.server_baseline import (
+    APIServer,
     APIServerConfig,
     ServerBaseline,
 )
@@ -29,11 +30,11 @@ class ServerManager:
     def __init__(
         self,
         configs: Union[ServerBaseline, List[APIServerConfig]],
-        server_class=None,
+        server_class: APIServer = APIServer,
         slurm=False,
         testing=False,
     ):
-        if server_class is None:
+        if type(server_class) is APIServer:
             if isinstance(configs, ServerBaseline):
                 if configs.server_type == "openai":
                     server_class = OpenAIServer
