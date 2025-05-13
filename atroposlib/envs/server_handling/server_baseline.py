@@ -134,7 +134,7 @@ class APIServer(ABC):
         self.config = config
         self.sem = AsyncSemWithAdaptiveWeight(config.num_max_requests_at_once)
         self.eval_sem = AsyncSemWithAdaptiveWeight(config.num_requests_for_eval)
-        self.server_healthy = False
+        self.server_healthy = True
         self.attempts_list = []
         self.request_timings = []
         # in case eval is much different, we should keep different buffers
