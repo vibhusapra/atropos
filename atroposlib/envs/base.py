@@ -238,14 +238,11 @@ class BaseEnv(ABC):
     @classmethod
     def config_init(
         cls,
-    ) -> Union[
-        Tuple[BaseEnvConfig, Union[ServerBaseline, List[APIServerConfig]]],
-        Tuple[BaseEnvConfig, Union[ServerBaseline, List[APIServerConfig]], Any],
-    ]:
+    ) -> Tuple[BaseEnvConfig, Union[ServerBaseline, List[APIServerConfig]]]:
         """
         Initialize the config
         """
-        return cls.env_config_cls(), ServerBaseline(), None
+        return cls.env_config_cls(), ServerBaseline()
 
     async def collect_trajectory(
         self, item: Item
