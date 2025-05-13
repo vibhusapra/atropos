@@ -1,5 +1,5 @@
 """
-This is a server that interfaces with trl's vLLM server."
+This is a server that interfaces with trl's vLLM server.
 
 Developed with much help from @winglian when they worked on integrating Atropos into Axolotl.
 """

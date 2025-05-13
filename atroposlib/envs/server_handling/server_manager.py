@@ -90,9 +90,9 @@ class ServerManager:
                         api_key="x",
                     )
                 )
-            self.servers = [OpenAIServer(config) for config in openai_configs]
+            self.servers = [server_class(config) for config in openai_configs]
         elif not slurm:
-            self.servers = [OpenAIServer(config) for config in configs]
+            self.servers = [server_class(config) for config in configs]
         else:
             nodelist = (
                 os.popen(f'scontrol show hostnames {os.environ["SLURM_JOB_NODELIST"]}')
