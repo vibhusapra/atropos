@@ -16,6 +16,7 @@ from .advantages import (
     compute_discounted_returns,
     compute_grpo_process_supervision_advantages,
 )
+from .best_of_n_selection import select_best_index
 
 __all__ = [
     "ConfigHandler",
@@ -28,4 +29,5 @@ __all__ = [
     "compute_discounted_returns",
     "compute_grpo_process_supervision_advantages",
     "ensure_trajectory_token_limit",
+    "select_best_index",
 ]
