@@ -7,7 +7,7 @@ import argparse
 import uvicorn
 
 
-def main(host: str, port: int, reload: bool):
+def main():
     """
     Run the API server.
     Args:
@@ -15,13 +15,15 @@ def main(host: str, port: int, reload: bool):
         port: The port to run the API server on.
         reload: Whether to reload the API server on code changes.
     """
-    uvicorn.run("atroposlib.api:app", host=host, port=port, reload=reload)
-
-
-if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument("--reload", type=bool, default=False)
+    parser.add_argument("--reload", action="store_true")
     args = parser.parse_args()
-    main(args.host, args.port, args.reload)
+    uvicorn.run(
+        "atroposlib.api:app", host=args.host, port=args.port, reload=args.reload
+    )
+
+
+if __name__ == "__main__":
+    main()
