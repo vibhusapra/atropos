@@ -246,7 +246,7 @@ class BlackjackEnv(BaseEnv):
         def _get_v_star_recursive(
             obs_tuple: Tuple[int, int, int], current_env: gymnasium.Env
         ) -> float:
-            player_sum, dealer_card, usable_ace = obs_tuple
+            player_sum, _, _ = obs_tuple
 
             # Base Case 1: Bust
             if player_sum > 21:

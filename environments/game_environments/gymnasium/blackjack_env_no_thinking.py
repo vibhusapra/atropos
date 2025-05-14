@@ -44,7 +44,6 @@ class BlackjackEnvNoThinking(BaseEnv):
         self.episode_outcomes_buffer: List[float] = []
         self.eval_metrics_custom: List[Tuple[str, float]] = []
 
-        # Define tools available to the LLM
         self.tools = [
             {
                 "type": "function",
@@ -52,9 +51,6 @@ class BlackjackEnvNoThinking(BaseEnv):
                     "name": "take_action",
                     "description": "Choose to 'hit' or 'stick' in Blackjack.",
                     "parameters": {
-                        # Parameters are implicitly defined by the arguments of the function call
-                        # For this simple case, let's assume the LLM will provide arguments.action
-                        # based on the prompt. A more robust schema would define 'action' here.
                         "type": "object",
                         "properties": {
                             "action": {"type": "string", "enum": ["hit", "stick"]}
@@ -66,7 +62,6 @@ class BlackjackEnvNoThinking(BaseEnv):
         ]
 
         tools_json = json.dumps(self.tools)
-        # Updated system prompt for tool calling
         self.system_prompt = (
             "You are an AI agent playing Blackjack. "
             "You need to decide whether to hit or stick based on your current hand and the dealer's showing card.\n\n"
@@ -119,12 +114,12 @@ class BlackjackEnvNoThinking(BaseEnv):
             return None
 
         parsed_name, parsed_args, is_error = parse_tool_call(
-            llm_response, self.tools, ["tool_call"]  # Expecting <tool_call>
+            llm_response, self.tools, ["tool_call"]
         )
 
         if is_error:
             error_detail = (
-                str(parsed_name)  # Error message is in parsed_name if is_error
+                str(parsed_name)
                 if parsed_name
                 else "Parser indicated error, but no specific message was returned."
             )
@@ -177,7 +172,6 @@ class BlackjackEnvNoThinking(BaseEnv):
             env.close()
             return None, []
 
-        # Use the class system_prompt
         messages.append({"role": "system", "content": self.system_prompt})
 
         current_obs_str = self._format_observation(obs)
@@ -208,7 +202,7 @@ class BlackjackEnvNoThinking(BaseEnv):
                     ].message.content.strip()
                     logger.info(
                         f"[Seed: {seed}] LLM Raw Response: '{llm_action_response}'"
-                    )  # Log raw response
+                    )
                 except Exception as e:
                     logger.error(f"[Seed: {seed}] LLM API error: {e}")
                     break
