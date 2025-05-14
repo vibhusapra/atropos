@@ -489,7 +489,7 @@ class BlackjackEnv(BaseEnv):
                 advantage_i = alt_combined_rewards[i] + alt_value_next[i] - value_t
                 # If we pass this then instead of raw scores, implicitly, we're
                 # doing some credit assignment. Could maybe do bonus on a win too
-                # and apply with a discount factor to alts in winning trajectories
+                # and/or apply with a discount factor to alts in winning trajectories
                 alt_advantages.append(advantage_i)
                 logger.debug(
                     f"[Collect Trajectory Seed: {seed} Turn: {turn+1} Alt: {i}] "
@@ -663,6 +663,15 @@ class BlackjackEnv(BaseEnv):
     ) -> List[Optional[BlackjackScoredDataGroup]]:
         """Pass through rollout data. The 'scores' field in BlackjackScoredDataGroup
         already contains the A*(s,a) advantages from the collection phase.
+
+        If you wanted to play around with additional scoring metrics, you could do so here.
+        Eg, bonuses for the specific winning action trajectory
+
+        Args:
+            rollout_group_data: List of BlackjackScoredDataGroup objects containing the collected rollout data.
+
+        Returns:
+            List of BlackjackScoredDataGroup objects with the scores field updated.
         """
         logger.info(f"[Score] Processing {len(rollout_group_data)} steps.")
         return rollout_group_data
@@ -670,6 +679,16 @@ class BlackjackEnv(BaseEnv):
     async def collect_trajectories(
         self, item: Tuple[int, int]
     ) -> Tuple[List[BlackjackScoredDataGroup], List[Tuple[int, int]]]:
+        """Collect trajectories for training.
+
+        Args:
+            item: Tuple containing the seed and the group index.
+
+        Returns:
+            Tuple of two lists:
+            - List of BlackjackScoredDataGroup objects containing the collected rollout data.
+            - List of Tuple[int, int] objects for the backlog
+        """
         seed, _ = item
         traj = await self._collect_trajectory(seed)
         if not traj:
