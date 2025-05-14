@@ -546,12 +546,12 @@ class BlackjackEnv(BaseEnv):
         chosen_advantage_for_log = (
             alt_advantages[best_advantage_idx]
             if best_advantage_idx < len(alt_advantages)
-            else "N/A"
+            else float("-inf")
         )
         chosen_token_length_for_log = (
             alt_token_lengths[best_advantage_idx]
             if best_advantage_idx < len(alt_token_lengths)
-            else "N/A"
+            else float("-inf")
         )
         logger.debug(
             f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}] "
