@@ -6,7 +6,7 @@ import random
 from dotenv import load_dotenv
 
 from atroposlib.envs.base import EvalHandlingEnum, OpenaiConfig
-from environments.game_environments.gymnasium.blackjack_env import (
+from environments.game_environments.gymnasium.blackjack_env_thinking import (
     BlackjackEnv,
     BlackjackEnvConfig,
 )
@@ -76,9 +76,11 @@ async def main():
 
         _ = env._get_or_create_episode(seed)
 
-        result_trajectory = await env.collect_trajectory(seed)
+        result_trajectories_tuple = await env.collect_trajectories((seed, 0))
+        result_trajectory = result_trajectories_tuple[0]
+
         logger.info(
-            f"Trajectory collection complete with {len(result_trajectory)} steps."
+            f"Trajectory collection complete with {len(result_trajectory)} groups/steps."
         )
 
         episode_summary = None
