@@ -19,9 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
-    logger.info(
-        "Starting Blackjack (No Thinking) environment local debug runner"
-    )
+    logger.info("Starting Blackjack (No Thinking) environment local debug runner")
 
     env_config = BlackjackEnvNoThinkingConfig(
         tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
@@ -73,19 +71,25 @@ async def main():
         logger.info(f"Using seed: {seed} for item: {item_for_env}")
 
         result_tuple = await env.collect_trajectory(item_for_env)
-        
+
         scored_data_item: Optional[ScoredDataItem] = None
         if result_tuple and result_tuple[0]:
             scored_data_item = result_tuple[0]
             logger.info(
                 f"Trajectory collection complete. Score: {scored_data_item.get('scores')}"
             )
-            if env_config.include_messages and scored_data_item.get('messages'):
+            if env_config.include_messages and scored_data_item.get("messages"):
                 logger.info("Collected Messages:")
-                for i, msg in enumerate(scored_data_item['messages']):
-                    logger.info(f"  {i}. Role: {msg['role']}, Content: '{str(msg['content'])[:150]}...'")
-            logger.info(f"Tokens ({len(scored_data_item.get('tokens', []))}): {str(scored_data_item.get('tokens'))[:100]}...")
-            logger.info(f"Masks ({len(scored_data_item.get('masks', []))}): {str(scored_data_item.get('masks'))[:100]}...")
+                for i, msg in enumerate(scored_data_item["messages"]):
+                    logger.info(
+                        f"  {i}. Role: {msg['role']}, Content: '{str(msg['content'])[:150]}...'"
+                    )
+            logger.info(
+                f"Tokens ({len(scored_data_item.get('tokens', []))}): {str(scored_data_item.get('tokens'))[:100]}..."
+            )
+            logger.info(
+                f"Masks ({len(scored_data_item.get('masks', []))}): {str(scored_data_item.get('masks'))[:100]}..."
+            )
         else:
             logger.error("Trajectory collection did not return a ScoredDataItem.")
 

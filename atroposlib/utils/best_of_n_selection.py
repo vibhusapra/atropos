@@ -4,7 +4,8 @@ Greedy selection of the best alternative in a group of alternatives.
 For a group of alternatives, select the one with the highest score (raw rewards or advantages).
 """
 
-from typing import List, Union, Tuple
+from typing import List, Union
+
 
 def select_best_index(
     primary_scores: List[Union[float, int]],
@@ -35,7 +36,7 @@ def select_best_index(
         raise ValueError("Primary and secondary score lists must have the same length.")
 
     num_items = len(primary_scores)
-    if num_items == 0: # Should be caught by the first check, but as a safeguard.
+    if num_items == 0:  # Should be caught by the first check, but as a safeguard.
         raise ValueError("Input score lists cannot be empty.")
 
     best_index = 0
@@ -49,10 +50,10 @@ def select_best_index(
         if primary_higher_is_better:
             if primary_score_i > primary_score_best:
                 current_primary_is_better = True
-        else: # primary_lower_is_better
+        else:  # primary_lower_is_better
             if primary_score_i < primary_score_best:
                 current_primary_is_better = True
-        
+
         if current_primary_is_better:
             best_index = i
             continue
@@ -64,21 +65,16 @@ def select_best_index(
         if primary_score_i == primary_score_best:
             secondary_score_i = secondary_scores[i]
             secondary_score_best = secondary_scores[best_index]
-            
+
             current_secondary_is_better_for_tiebreak = False
             if secondary_lower_is_better:
                 if secondary_score_i < secondary_score_best:
                     current_secondary_is_better_for_tiebreak = True
-            else: # secondary_higher_is_better
+            else:  # secondary_higher_is_better
                 if secondary_score_i > secondary_score_best:
                     current_secondary_is_better_for_tiebreak = True
-            
+
             if current_secondary_is_better_for_tiebreak:
                 best_index = i
 
     return best_index
-
-
-
-
-

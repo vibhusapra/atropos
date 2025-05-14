@@ -27,10 +27,13 @@ from atroposlib.envs.base import (
     OpenaiConfig,
     ScoredDataGroup,
 )
-from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
-from atroposlib.utils.message_history_utils import truncate_thinking, ensure_trajectory_token_limit
-from atroposlib.utils.tool_call_parser import parse_tool_call
 from atroposlib.utils.best_of_n_selection import select_best_index
+from atroposlib.utils.message_history_utils import (
+    ensure_trajectory_token_limit,
+    truncate_thinking,
+)
+from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
+from atroposlib.utils.tool_call_parser import parse_tool_call
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +47,7 @@ class BlackjackEnvConfig(BaseEnvConfig):
     thinking_active: bool = True
     eval_episodes: int = 100
     max_think_chars_history: int = 3000
-    max_trajectory_tokens: int = 24576 #seq_len of RL trainer
+    max_trajectory_tokens: int = 24576  # seq_len of RL trainer
     debug_mode: bool = False
     group_size: int = 16
     tiebreak_token_factor: float = 0.01
@@ -526,9 +529,9 @@ class BlackjackEnv(BaseEnv):
                 primary_scores=alt_advantages,
                 secondary_scores=alt_token_lengths,
                 primary_higher_is_better=True,
-                secondary_lower_is_better=True
+                secondary_lower_is_better=True,
             )
-            
+
             chosen_advantage_for_log = alt_advantages[best_advantage_idx]
             chosen_token_length_for_log = alt_token_lengths[best_advantage_idx]
             logger.debug(
@@ -558,7 +561,9 @@ class BlackjackEnv(BaseEnv):
             ep.message_history = current_state_messages
 
             response_for_history = truncate_thinking(
-                chosen_full_response, self.tokenizer, self.config.max_think_chars_history
+                chosen_full_response,
+                self.tokenizer,
+                self.config.max_think_chars_history,
             )
             ep.message_history.append(
                 {"role": "agent", "content": response_for_history}
