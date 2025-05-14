@@ -309,355 +309,293 @@ class BlackjackEnv(BaseEnv):
             if sim_env is not None:
                 sim_env.close()
 
-    async def _collect_trajectory(self, seed: int) -> List[BlackjackScoredDataGroup]:
-        """Collect data for ONE trajectory, evaluating G alternatives per step using MC advantages."""
+    async def _next_step(self, ep: EpisodeState, current_turn: int, max_turns: int) -> Tuple[Optional[BlackjackScoredDataGroup], bool]:
+        """Process one step/turn of an episode.
+
+        This involves estimating current state value, sampling multiple (G) responses from the LLM,
+        evaluating each response by simulating its action, calculating advantages,
+        selecting the best response/action, updating the episode state (message history, actions, rewards),
+        and stepping the main environment.
+
+        Args:
+            ep: The current state of the episode.
+            current_turn: The current turn number (0-indexed).
+            max_turns: The maximum number of turns allowed in the episode.
+
+        Returns:
+            A tuple containing:
+                - BlackjackScoredDataGroup: Data collected for this step (tokens, masks, advantages, etc.).
+                                          None if a critical error occurred during the step.
+                - bool: True if the episode terminated during this step, False otherwise.
+        """
         G = self.config.group_size
-        max_turns = self.config.max_turns or 5
 
-        trajectory_data_for_trainer: List[BlackjackScoredDataGroup] = []
-        episode_summary_metrics: Optional[Dict[str, Any]] = None
-
-        logger.info(
-            f"[Collect Trajectory Seed: {seed}] Starting trajectory. Group size G={G}."
+        current_state_messages = ep.message_history.copy()
+        logger.debug(
+            f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}/{max_turns}] "
+            f"Current state history length: {len(current_state_messages)}"
         )
 
         try:
-            ep = self._get_or_create_episode(seed)
-        except Exception as e:
+            value_t = await self._estimate_value(
+                episode_seed_for_sim=ep.seed, env_actions_to_replay=ep.actions
+            )
+            logger.debug(
+                f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}] Estimated V(s_t) = {value_t:.4f}"
+            )
+        except Exception as e_vt:
             logger.error(
-                f"[Collect Trajectory Seed: {seed}] Failed to create/get episode: {e}",
+                f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}] Error estimating V(s_t): {e_vt}",
                 exc_info=True,
             )
-            return []
+            return None, True # Indicate error and episode termination
 
-        for turn in range(max_turns):
-            current_state_messages = ep.message_history.copy()
-            logger.debug(
-                f"[Collect Trajectory Seed: {seed} Turn: {turn+1}/{max_turns}] "
-                f"Current state history length: {len(current_state_messages)}"
+        messages_for_llm = current_state_messages.copy()
+        agent_prompt_content = "<think>\n" if self.config.thinking_active else ""
+        messages_for_llm.append({"role": "agent", "content": agent_prompt_content})
+
+        try:
+            responses = await self._sample_response(messages_for_llm, n=G)
+            if not responses or len(responses) != G:
+                logger.error(
+                    f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}] "
+                    f"Expected {G} responses, got {len(responses) if responses else 0}. "
+                    f"Aborting step."
+                )
+                return None, True # Indicate error and episode termination
+        except Exception as e_sample:
+            logger.error(
+                f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}] Error sampling responses: {e_sample}",
+                exc_info=True,
             )
+            return None, True # Indicate error and episode termination
+
+        alt_full_responses: List[str] = []
+        alt_parsed_actions: List[int] = []
+        alt_env_actions: List[int] = []
+        alt_raw_rewards: List[float] = []
+        alt_combined_rewards: List[float] = []
+        alt_next_state_msgs: List[List[Dict]] = []
+        alt_is_terminal: List[bool] = []
+        alt_tokens: List[List[int]] = []
+        alt_masks: List[List[int]] = []
+        alt_advantages: List[float] = []
+
+        for i in range(G):
+            llm_output_only = responses[i]
+            full_agent_response = agent_prompt_content + llm_output_only
+            alt_full_responses.append(full_agent_response)
+
+            parsed_action = self._parse_tool_call(full_agent_response)
+            alt_parsed_actions.append(parsed_action)
+
+            env_action = parsed_action if parsed_action != -1 else 0 # Default to stick on parse error
+            alt_env_actions.append(env_action)
+
+            sim_env_i = None
+            raw_env_reward_i = 0.0
+            term_i, trunc_i = False, False
+            next_state_msgs_i = []
+            sim_obs_next_i = None 
 
             try:
-                value_t = await self._estimate_value(
-                    episode_seed_for_sim=ep.seed, env_actions_to_replay=ep.actions
-                )
-                logger.debug(
-                    f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] Estimated V(s_t) = {value_t:.4f}"
-                )
-            except Exception as e_vt:
-                logger.error(
-                    f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] Error estimating V(s_t): {e_vt}",
-                    exc_info=True,
-                )
-                break
-
-            messages_for_llm = current_state_messages.copy()
-            agent_prompt_content = "<think>\n" if self.config.thinking_active else ""
-            messages_for_llm.append({"role": "agent", "content": agent_prompt_content})
-
-            try:
-                responses = await self._sample_response(messages_for_llm, n=G)
-                if len(responses) != G:
-                    logger.error(
-                        f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] "
-                        f"Expected {G} responses, got {len(responses)}. "
-                        f"Aborting trajectory."
-                    )
-                    break
-            except Exception as e_sample:
-                logger.error(
-                    f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] Error sampling responses: {e_sample}",
-                    exc_info=True,
-                )
-                break
-
-            alt_full_responses: List[str] = []
-            alt_parsed_actions: List[int] = []
-            alt_env_actions: List[int] = []
-            alt_raw_rewards: List[float] = []
-            alt_combined_rewards: List[float] = []
-            alt_next_state_msgs: List[List[Dict]] = []
-            alt_is_terminal: List[bool] = []
-            alt_tokens: List[List[int]] = []
-            alt_masks: List[List[int]] = []
-            alt_value_next: List[float] = []
-            alt_advantages: List[float] = []
-
-            for i in range(G):
-                llm_output_only = responses[i]
-                full_agent_response = agent_prompt_content + llm_output_only
-                alt_full_responses.append(full_agent_response)
-
-                parsed_action = self._parse_tool_call(full_agent_response)
-                alt_parsed_actions.append(parsed_action)
-
-                env_action = parsed_action if parsed_action != -1 else 0
-                alt_env_actions.append(env_action)
-
-                sim_env = None
-                raw_env_reward_i = 0.0
-                term_i, trunc_i = False, False
-                next_state_msgs_i = []
-                try:
-                    sim_env = gymnasium.make(self.config.env_name)
-                    _, _ = sim_env.reset(seed=ep.seed)
-                    for prev_action in ep.actions:
-                        _, _, term_replay, trunc_replay, _ = sim_env.step(prev_action)
-                        if term_replay or trunc_replay:
-                            logger.error(
-                                f"[Collect Trajectory Seed: {seed} Turn: {turn+1} Alt: {i}] "
-                                f"Sim env terminated during replay. State mismatch?"
-                            )
-                            term_i, trunc_i = True, True
-                            raw_env_reward_i = 0.0
-                            break
-
-                    if not (term_i or trunc_i):
-                        sim_obs_next, raw_env_reward_i, term_i, trunc_i, _ = (
-                            sim_env.step(env_action)
+                sim_env_i = gymnasium.make(self.config.env_name)
+                _, _ = sim_env_i.reset(seed=ep.seed)
+                for prev_action_idx, prev_action in enumerate(ep.actions):
+                    _, _, term_replay, trunc_replay, _ = sim_env_i.step(prev_action)
+                    if term_replay or trunc_replay:
+                        logger.error(
+                            f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1} Alt: {i}] "
+                            f"Sim env for alternative {i} terminated prematurely during history replay "
+                            f"(action {prev_action_idx+1}/{len(ep.actions)}). State mismatch or unexpected termination."
                         )
-
-                    alt_raw_rewards.append(raw_env_reward_i)
-                    alt_is_terminal.append(term_i or trunc_i)
-
-                    combined_reward_i = self._score_response(
-                        raw_env_reward_i, full_agent_response, parsed_action
+                        term_i, trunc_i = True, True 
+                        raw_env_reward_i = 0.0 
+                        break
+                
+                if not (term_i or trunc_i): 
+                    sim_obs_next_i, raw_env_reward_i, term_i, trunc_i, _ = (
+                        sim_env_i.step(env_action)
                     )
-                    alt_combined_rewards.append(combined_reward_i)
 
-                    current_state_plus_response = current_state_messages + [
-                        {"role": "agent", "content": full_agent_response}
+                alt_raw_rewards.append(raw_env_reward_i)
+                alt_is_terminal.append(term_i or trunc_i)
+
+                combined_reward_i = self._score_response(
+                    raw_env_reward_i, full_agent_response, parsed_action
+                )
+                alt_combined_rewards.append(combined_reward_i)
+
+                current_state_plus_response_i = current_state_messages + [
+                    {"role": "agent", "content": full_agent_response}
+                ]
+                if sim_obs_next_i is not None and not (term_i or trunc_i): 
+                    next_state_msgs_i = current_state_plus_response_i + [
+                        {
+                            "role": "environment",
+                            "content": self._format_observation(sim_obs_next_i),
+                        }
                     ]
-                    if sim_obs_next is not None:
-                        next_state_msgs_i = current_state_plus_response + [
-                            {
-                                "role": "environment",
-                                "content": self._format_observation(sim_obs_next),
-                            }
-                        ]
-                    else:
-                        next_state_msgs_i = current_state_plus_response
-                    alt_next_state_msgs.append(next_state_msgs_i)
+                else: 
+                    next_state_msgs_i = current_state_plus_response_i
+                alt_next_state_msgs.append(next_state_msgs_i)
 
-                    tokenized_i = tokenize_for_trainer(
-                        self.tokenizer, next_state_msgs_i
+                tokenized_i = tokenize_for_trainer(
+                    self.tokenizer, next_state_msgs_i 
+                )
+                alt_tokens.append(tokenized_i["tokens"])
+                alt_masks.append(tokenized_i["masks"])
+
+            except Exception as e_sim:
+                logger.error(
+                    f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1} Alt: {i}] "
+                    f"Error simulating action {env_action} for alternative: {e_sim}",
+                    exc_info=True,
+                )
+                alt_raw_rewards.append(0.0) 
+                alt_combined_rewards.append(-1.0) 
+                alt_next_state_msgs.append(
+                    current_state_messages
+                    + [{"role": "agent", "content": full_agent_response}] 
+                )
+                alt_is_terminal.append(True) 
+                alt_tokens.append([]) 
+                alt_masks.append([])
+            finally:
+                if sim_env_i:
+                    sim_env_i.close()
+
+        alt_value_next: List[float] = [] 
+        for i in range(G):
+            if not alt_is_terminal[i]:
+                try:
+                    actions_to_reach_s_prime = ep.actions + [alt_env_actions[i]]
+                    value_next_i = await self._estimate_value(
+                        episode_seed_for_sim=ep.seed,
+                        env_actions_to_replay=actions_to_reach_s_prime,
                     )
-                    alt_tokens.append(tokenized_i["tokens"])
-                    alt_masks.append(tokenized_i["masks"])
-
-                except Exception as e_sim:
+                    alt_value_next.append(value_next_i)
+                except Exception as e_vn:
                     logger.error(
-                        f"[Collect Trajectory Seed: {seed} Turn: {turn+1} Alt: {i}] "
-                        f"Error simulating action {env_action}: {e_sim}",
+                        f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1} Alt: {i}] "
+                        f"Error estimating V(s') for alternative: {e_vn}",
                         exc_info=True,
                     )
-                    alt_raw_rewards.append(0.0)
-                    alt_combined_rewards.append(-1.0)
-                    alt_next_state_msgs.append(
-                        current_state_messages
-                        + [{"role": "agent", "content": full_agent_response}]
-                    )
-                    alt_is_terminal.append(True)
-                    alt_tokens.append([])
-                    alt_masks.append([])
-                finally:
-                    if sim_env:
-                        sim_env.close()
+                    alt_value_next.append(0.0) 
+            else:
+                alt_value_next.append(0.0) 
 
-            alt_value_next: List[float] = []
-            for i in range(G):
-                if not alt_is_terminal[i]:
-                    try:
-                        actions_to_reach_s_prime = ep.actions + [alt_env_actions[i]]
-                        value_next_i = await self._estimate_value(
-                            episode_seed_for_sim=ep.seed,
-                            env_actions_to_replay=actions_to_reach_s_prime,
-                        )
-                        alt_value_next.append(value_next_i)
-                    except Exception as e_vn:
-                        logger.error(
-                            f"[Collect Trajectory Seed: {seed} Turn: {turn+1} Alt: {i}] "
-                            f"Error estimating V(s'): {e_vn}",
-                            exc_info=True,
-                        )
-                        alt_value_next.append(0.0)
-                else:
-                    alt_value_next.append(0.0)
-
-            for i in range(G):
+        for i in range(G):
+            if i < len(alt_combined_rewards) and i < len(alt_value_next) and value_t is not None:
                 advantage_i = alt_combined_rewards[i] + alt_value_next[i] - value_t
-                # If we pass this then instead of raw scores, implicitly, we're
-                # doing some credit assignment. Could maybe do bonus on a win too
-                # and/or apply with a discount factor to alts in winning trajectories
                 alt_advantages.append(advantage_i)
                 logger.debug(
-                    f"[Collect Trajectory Seed: {seed} Turn: {turn+1} Alt: {i}] "
+                    f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1} Alt: {i}] "
                     f"CombinedR={alt_combined_rewards[i]:.2f}, V_t={value_t:.2f}, "
                     f"V_t+1={alt_value_next[i]:.2f} => Advantage={advantage_i:.2f}"
                 )
-
-            if (
-                len(alt_tokens) != G
-                or len(alt_masks) != G
-                or len(alt_advantages) != G
-                or len(alt_next_state_msgs) != G
-                or len(alt_parsed_actions) != G
-            ):
-                # sanity check
-                logger.error(
-                    f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] "
-                    f"Mismatch in alternative list lengths after processing. "
-                    f"Aborting trajectory."
-                )
-                break
-
-            trajectory_data_for_trainer.append(
-                BlackjackScoredDataGroup(
-                    seed=ep.seed,
-                    tokens=alt_tokens,
-                    masks=alt_masks,
-                    scores=alt_advantages,
-                    messages=alt_next_state_msgs,
-                    parsed_actions=alt_parsed_actions,
-                )
-            )
-
-            # token lengths for tie-breaking during selection
-            alt_token_lengths = [len(tkns) for tkns in alt_tokens]
-
-            best_advantage_idx = select_best_index(
-                primary_scores=alt_advantages,
-                secondary_scores=alt_token_lengths,
-                primary_higher_is_better=True,
-                secondary_lower_is_better=True,
-            )
-
-            chosen_advantage_for_log = alt_advantages[best_advantage_idx]
-            chosen_token_length_for_log = alt_token_lengths[best_advantage_idx]
-            logger.debug(
-                f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] "
-                f"Selected Alt {best_advantage_idx} "
-                f"(Adv: {chosen_advantage_for_log:.2f}, "
-                f"Tokens: {chosen_token_length_for_log}) "
-                f"from {G} alternatives using select_best_index."
-            )
-
-            chosen_env_action = alt_env_actions[best_advantage_idx]
-            chosen_full_response = alt_full_responses[best_advantage_idx]
-            chosen_raw_env_reward = alt_raw_rewards[best_advantage_idx]
-            chosen_is_terminal = alt_is_terminal[best_advantage_idx]
-            chosen_parsed_action = alt_parsed_actions[best_advantage_idx]
-
-            logger.info(
-                f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] Chosen action to step env: "
-                f"{chosen_env_action} (from Alt {best_advantage_idx} with "
-                f"Adv {chosen_advantage_for_log:.2f})"
-            )
-
-            ep.num_total_actions += 1
-            if chosen_parsed_action != -1:
-                ep.num_correct_actions += 1
-
-            ep.message_history = current_state_messages
-
-            response_for_history = truncate_thinking(
-                chosen_full_response,
-                self.tokenizer,
-                self.config.max_think_chars_history,
-            )
-            ep.message_history.append(
-                {"role": "agent", "content": response_for_history}
-            )
-
-            try:
-                main_obs, main_reward, main_term, main_trunc, _ = ep.env.step(
-                    chosen_env_action
-                )
-                if abs(main_reward - chosen_raw_env_reward) > 1e-6:
-                    logger.warning(
-                        f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] "
-                        f"Mismatch between simulated reward ({chosen_raw_env_reward}) and "
-                        f"main env step reward ({main_reward}) for chosen action {chosen_env_action}."
-                    )
-                if (main_term or main_trunc) != chosen_is_terminal:
-                    logger.warning(
-                        f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] "
-                        f"Mismatch between simulated terminal state ({chosen_is_terminal}) and "
-                        f"main env step terminal state ({(main_term or main_trunc)}) "
-                        f"for chosen action {chosen_env_action}."
-                    )
-
-                term = main_term
-                trunc = main_trunc
-                obs = main_obs
-                ep.actions.append(chosen_env_action)
-                ep.step_rewards.append(main_reward)
-                ep.num_steps += 1
-
-                if obs:
-                    ep.message_history.append(
-                        {
-                            "role": "environment",
-                            "content": self._format_observation(obs),
-                        }
-                    )
-            except Exception as e_main_step:
-                logger.error(
-                    f"[Collect Trajectory Seed: {seed} Turn: {turn+1}] "
-                    f"Error stepping MAIN environment with chosen action {chosen_env_action}: {e_main_step}",
-                    exc_info=True,
-                )
-                term, trunc = True, True
-
-            if term or trunc:
-                ep.total_reward = sum(ep.step_rewards)
-                logger.info(
-                    f"[Collect Trajectory Seed: {seed}] Trajectory ended. "
-                    f"Term={term}, Trunc={trunc}. Total raw env reward: {ep.total_reward}"
-                )
-                break
-
-        final_raw_reward = sum(ep.step_rewards) if ep.step_rewards else 0.0
-        logger.info(
-            f"[Collect Trajectory Seed: {seed}] Finished collecting trajectory. "
-            f"Steps collected: {len(trajectory_data_for_trainer)}, "
-            f"Final raw reward: {final_raw_reward:.2f}"
-        )
-
-        if ep:
-            game_outcome = 0
-            if final_raw_reward > 0:
-                game_outcome = 1
-            elif final_raw_reward < 0:
-                game_outcome = -1
-            # debugging
-            episode_summary_metrics = {
-                "seed": ep.seed,
-                "total_reward": final_raw_reward,
-                "num_steps": ep.num_steps,
-                "num_correct_actions": ep.num_correct_actions,
-                "num_total_actions": ep.num_total_actions,
-                "game_outcome": game_outcome,
-            }
-            self.completed_episode_metrics_buffer.append(episode_summary_metrics)
-            logger.debug(
-                f"[Collect Trajectory Seed: {seed}] Added episode summary to buffer: {episode_summary_metrics}"
-            )
-
-        if seed in self.episodes:
-            try:
-                self.episodes[seed].env.close()
-            except Exception as e_close:
+            else:
                 logger.warning(
-                    f"[Collect Trajectory Seed: {seed}] Exception closing final env: {e_close}"
+                    f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1} Alt: {i}] "
+                    f"Skipping advantage calculation due to missing data or value_t. "
+                    f"len(alt_combined_rewards)={len(alt_combined_rewards)}, len(alt_value_next)={len(alt_value_next)}"
                 )
-            del self.episodes[seed]
+                alt_advantages.append(-float('inf')) 
 
-        return ensure_trajectory_token_limit(
-            trajectory_data_for_trainer,
-            self.tokenizer,
-            self.config.max_trajectory_tokens,
+        if not (
+            len(alt_tokens) == G and len(alt_masks) == G and
+            len(alt_advantages) == G and len(alt_next_state_msgs) == G and
+            len(alt_parsed_actions) == G
+        ):
+            logger.error(
+                f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}] "
+                f"Mismatch in alternative list lengths before creating ScoredDataGroup. "
+                f"Tokens:{len(alt_tokens)}, Masks:{len(alt_masks)}, Adv:{len(alt_advantages)}, "
+                f"Msgs:{len(alt_next_state_msgs)}, ParsedAct:{len(alt_parsed_actions)}. Expected {G} for all. "
+                f"Aborting step."
+            )
+            return None, True
+
+        current_step_data = BlackjackScoredDataGroup(
+            seed=ep.seed,
+            tokens=alt_tokens,
+            masks=alt_masks,
+            scores=alt_advantages, 
+            messages=alt_next_state_msgs,
+            parsed_actions=alt_parsed_actions,
         )
+
+        alt_token_lengths = [len(tkns) if tkns else 0 for tkns in alt_tokens]
+
+        best_advantage_idx = select_best_index(
+            primary_scores=alt_advantages,
+            secondary_scores=alt_token_lengths,
+            primary_higher_is_better=True,
+            secondary_lower_is_better=True,
+        )
+
+        chosen_advantage_for_log = alt_advantages[best_advantage_idx] if best_advantage_idx < len(alt_advantages) else "N/A"
+        chosen_token_length_for_log = alt_token_lengths[best_advantage_idx] if best_advantage_idx < len(alt_token_lengths) else "N/A"
+        logger.debug(
+            f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}] "
+            f"Selected Alt {best_advantage_idx} "
+            f"(Adv: {chosen_advantage_for_log}, "
+            f"Tokens: {chosen_token_length_for_log}) "
+            f"from {G} alternatives."
+        )
+
+        chosen_env_action = alt_env_actions[best_advantage_idx] if best_advantage_idx < len(alt_env_actions) else 0 
+        chosen_full_response = alt_full_responses[best_advantage_idx] if best_advantage_idx < len(alt_full_responses) else ""
+        chosen_parsed_action = alt_parsed_actions[best_advantage_idx] if best_advantage_idx < len(alt_parsed_actions) else -1
+
+
+        logger.info(
+            f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}] Chosen action to step env: "
+            f"{chosen_env_action} (from Alt {best_advantage_idx} with "
+            f"Adv {chosen_advantage_for_log})"
+        )
+
+        ep.num_total_actions += 1
+        if chosen_parsed_action != -1: 
+            ep.num_correct_actions += 1
+        
+        response_for_history = truncate_thinking(
+            chosen_full_response,
+            self.tokenizer,
+            self.config.max_think_chars_history,
+        )
+        ep.message_history.append(
+            {"role": "agent", "content": response_for_history}
+        )
+
+        main_obs_next, main_reward_this_step, main_term_this_step, main_trunc_this_step = None, 0.0, False, False
+        try:
+            main_obs_next, main_reward_this_step, main_term_this_step, main_trunc_this_step, _ = ep.env.step(
+                chosen_env_action
+            )
+
+            ep.actions.append(chosen_env_action)
+            ep.step_rewards.append(main_reward_this_step)
+            ep.num_steps += 1
+
+            if main_obs_next: 
+                ep.message_history.append(
+                    {
+                        "role": "environment",
+                        "content": self._format_observation(main_obs_next),
+                    }
+                )
+        except Exception as e_main_step:
+            logger.error(
+                f"[Next Step Seed: {ep.seed} Turn: {current_turn + 1}] "
+                f"Error stepping MAIN environment with chosen action {chosen_env_action}: {e_main_step}",
+                exc_info=True,
+            )
+            main_term_this_step, main_trunc_this_step = True, True 
+
+        is_episode_terminal_this_step = main_term_this_step or main_trunc_this_step
+        
+        return current_step_data, is_episode_terminal_this_step
 
     async def score(
         self, rollout_group_data: List[BlackjackScoredDataGroup]
@@ -680,21 +618,116 @@ class BlackjackEnv(BaseEnv):
     async def collect_trajectories(
         self, item: Tuple[int, int]
     ) -> Tuple[List[BlackjackScoredDataGroup], List[Tuple[int, int]]]:
-        """Collect trajectories for training.
+        """Collect data for ONE FULL trajectory (episode) by repeatedly calling _next_step.
+
+        This method initializes an episode, then iterates through turns, calling `_next_step`
+        to get data for each turn. It accumulates this data and handles episode termination,
+        final metric calculation, and cleanup.
 
         Args:
-            item: Tuple containing the seed and the group index.
+            item: Tuple containing the seed and the group index (group index currently unused here).
 
         Returns:
             Tuple of two lists:
-            - List of BlackjackScoredDataGroup objects containing the collected rollout data.
-            - List of Tuple[int, int] objects for the backlog
+            - List of BlackjackScoredDataGroup objects: Contains the collected data for each step of the trajectory.
+            - List of Tuple[int, int]: Backlog items (always empty in this implementation).
         """
-        seed, _ = item
-        traj = await self._collect_trajectory(seed)
-        if not traj:
-            logger.warning(f"[Collect Trajectories] Empty trajectory for seed {seed}.")
-        return traj, []
+        seed, _ = item 
+        G_config = self.config.group_size 
+        max_turns = self.config.max_turns or 5
+
+        trajectory_data_for_trainer: List[BlackjackScoredDataGroup] = []
+
+        logger.info(
+            f"[Collect Trajectories Seed: {seed}] Starting new trajectory. Group size G={G_config}, Max turns={max_turns}."
+        )
+
+        try:
+            ep = self._get_or_create_episode(seed)
+        except Exception as e:
+            logger.error(
+                f"[Collect Trajectories Seed: {seed}] Fatal error creating/getting episode: {e}",
+                exc_info=True,
+            )
+            return [], [] 
+
+        for turn_idx in range(max_turns):
+            logger.debug(f"[Collect Trajectories Seed: {seed}] Attempting turn {turn_idx + 1}/{max_turns}.")
+            
+            step_data, is_terminal_this_step = await self._next_step(ep, turn_idx, max_turns)
+
+            if step_data:
+                trajectory_data_for_trainer.append(step_data)
+            else:
+                logger.error(
+                    f"[Collect Trajectories Seed: {seed}] Turn {turn_idx + 1} failed to produce data. Terminating episode."
+                )
+                is_terminal_this_step = True 
+            
+            if is_terminal_this_step:
+                final_reward_at_termination = sum(ep.step_rewards) if ep.step_rewards else 0.0
+                logger.info(
+                    f"[Collect Trajectories Seed: {seed}] Episode ended at turn {turn_idx + 1}. "
+                    f"Reason: step reported terminal. Total raw env reward: {final_reward_at_termination:.2f}"
+                )
+                break 
+        else: 
+            logger.info(
+                 f"[Collect Trajectories Seed: {seed}] Episode reached max_turns ({max_turns})."
+            )
+
+        final_raw_reward = sum(ep.step_rewards) if ep.step_rewards else 0.0
+        logger.info(
+            f"[Collect Trajectories Seed: {seed}] Finished collecting trajectory. "
+            f"Total steps in trajectory: {len(trajectory_data_for_trainer)}, "
+            f"Actual turns in episode: {ep.num_steps}, "
+            f"Final raw reward: {final_raw_reward:.2f}"
+        )
+
+        if ep: 
+            game_outcome = 0
+            if final_raw_reward > 0: game_outcome = 1
+            elif final_raw_reward < 0: game_outcome = -1
+            
+            episode_summary_metrics = {
+                "seed": ep.seed,
+                "total_reward": final_raw_reward,
+                "num_steps": ep.num_steps, 
+                "num_correct_actions": ep.num_correct_actions,
+                "num_total_actions": ep.num_total_actions, 
+                "game_outcome": game_outcome,
+            }
+            self.completed_episode_metrics_buffer.append(episode_summary_metrics)
+            logger.debug(
+                f"[Collect Trajectories Seed: {seed}] Added episode summary to buffer: {episode_summary_metrics}"
+            )
+
+        if seed in self.episodes:
+            try:
+                if hasattr(self.episodes[seed], 'env') and self.episodes[seed].env is not None:
+                    self.episodes[seed].env.close()
+            except Exception as e_close:
+                logger.warning(
+                    f"[Collect Trajectories Seed: {seed}] Exception closing environment for episode: {e_close}",
+                    exc_info=True
+                )
+            del self.episodes[seed] 
+
+        if not trajectory_data_for_trainer:
+            logger.warning(f"[Collect Trajectories Seed: {seed}] Collected an empty trajectory (no valid steps).")
+            return [], [] 
+
+        limited_trajectory_data = ensure_trajectory_token_limit(
+            trajectory_data_for_trainer,
+            self.tokenizer,
+            self.config.max_trajectory_tokens,
+        )
+        
+        if not limited_trajectory_data:
+             logger.warning(f"[Collect Trajectories Seed: {seed}] Trajectory became empty after token limiting.")
+             return [], []
+
+        return limited_trajectory_data, [] 
 
     async def setup(self):
         pass
