@@ -253,7 +253,10 @@ python gsm8k_server.py process --env.data_path_to_save_groups gsm8k.jsonl
 would save data to `gsm8k.jsonl` and also generate a corresponding `gsm8k.html` which can be opened in a browser. By default this uses OpenAI deployment of `gpt-4.1` if the `OPENAI_API_KEY` environment variable is defined, but this behavior can be customized for exmaple as follows
 
 ```sh
-python gsm8k_server.py process --env.data_path_to_save_groups gsm8k.jsonl --openai.base_url https://generativelanguage.googleapis.com/v1beta/openai/ --openai.api_key $GEMINI_API_KEY --openai.model_name gemini-2.0-flash  
+python gsm8k_server.py process --env.data_path_to_save_groups gsm8k.jsonl \
+  --openai.base_url https://generativelanguage.googleapis.com/v1beta/openai/ \
+  --openai.api_key $GEMINI_API_KEY \
+  --openai.model_name gemini-2.0-flash  
 ```
 
 See `python gsm8k_server.py process --help` for more detailed usage.
