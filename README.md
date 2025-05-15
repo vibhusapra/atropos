@@ -250,7 +250,7 @@ After launching the API and your selected environments (e.g. `run-api & python e
 python gsm8k_server.py process --env.data_path_to_save_groups gsm8k.jsonl
 ```
 
-would save data to `gsm8k.jsonl` and also generate a corresponding `gsm8k.html` which can be opened in a browser. By default this uses OpenAI deployment of `gpt-4.1` if the `OPENAI_API_KEY` environment variable is defined, but this behavior can be customized for exmaple as follows
+would save data to `gsm8k.jsonl` and also generate a corresponding `gsm8k.html` which can be opened in a browser. By default this uses OpenAI deployment of `gpt-4.1` if the `OPENAI_API_KEY` environment variable is defined, but this behavior can be customized for example as follows
 
 ```sh
 python gsm8k_server.py process --env.data_path_to_save_groups gsm8k.jsonl \
