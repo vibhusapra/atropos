@@ -256,7 +256,7 @@ would save data to `gsm8k.jsonl` and also generate a corresponding `gsm8k.html` 
 python gsm8k_server.py process --env.data_path_to_save_groups gsm8k.jsonl \
   --openai.base_url https://generativelanguage.googleapis.com/v1beta/openai/ \
   --openai.api_key $GEMINI_API_KEY \
-  --openai.model_name gemini-2.0-flash
+  --openai.model_name gemini-2.0-flash  
 ```
 
 See `python gsm8k_server.py process --help` for more detailed usage.
