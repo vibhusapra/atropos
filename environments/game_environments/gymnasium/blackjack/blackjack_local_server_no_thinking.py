@@ -7,7 +7,7 @@ from typing import Optional
 from dotenv import load_dotenv
 
 from atroposlib.envs.base import EvalHandlingEnum, OpenaiConfig, ScoredDataItem
-from environments.game_environments.gymnasium.blackjack_env_no_thinking import (
+from environments.game_environments.gymnasium.blackjack.blackjack_env_no_thinking import (
     BlackjackEnvNoThinking,
     BlackjackEnvNoThinkingConfig,
 )
