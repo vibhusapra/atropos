@@ -14,15 +14,17 @@ curl -X POST http://localhost:5002/execute \
 
 
 """
+
 import os
 import subprocess
 import uuid
-from flask import Flask, request, jsonify
-import time
+
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-@app.route('/execute', methods=['POST'])
+
+@app.route("/execute", methods=["POST"])
 def execute_code():
     try:
         # Receive C++ code from API request
@@ -46,16 +48,13 @@ def execute_code():
             input=test_cases,
             capture_output=True,
             text=True,
-            timeout=5  # Prevent infinite loops
+            timeout=5,  # Prevent infinite loops
         )
 
         # Cleanup temporary files
         os.remove(py_filename)
 
-        return jsonify({
-            "output": exec_result.stdout,
-            "error": exec_result.stderr
-        })
+        return jsonify({"output": exec_result.stdout, "error": exec_result.stderr})
         """ C++ stuff
 
         file_id = str(uuid.uuid4())
@@ -90,6 +89,6 @@ def execute_code():
     except Exception as e:
         return jsonify({"error": str(e)})
 
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5002)
 
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5002)

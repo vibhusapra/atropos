@@ -1,19 +1,14 @@
-import random
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
-
-from datasets import load_dataset
-from latex2sympy2_extended import NormalizationConfig
-from math_verify import LatexExtractionConfig, parse, verify
-from tqdm.asyncio import tqdm_asyncio
-import regex as re
-
 import asyncio
+import os
+import random
+from typing import List, Optional, Tuple
+
+import docker
 import httpx
-import docker, os
+import regex as re
+from datasets import load_dataset
 
-from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataGroup
-from atroposlib.type_definitions import Item, number
-
+from atroposlib.envs.base import BaseEnv, ScoredDataGroup
 from atroposlib.type_definitions import GameHistory, Item
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
@@ -25,16 +20,14 @@ system_prompt = (
     "tags, and then provide your solution or response to the problem.\n\n"
 )
 
+
 async def submit_code(client, code, test_input, language="python"):
     url = "http://localhost:5002/execute"
-    payload = {
-        "code": code,
-        "input": test_input,
-        "language": language
-    }
+    payload = {"code": code, "input": test_input, "language": language}
     response = await client.post(url, json=payload)
     response_json = response.json()
     return response_json["output"]
+
 
 async def get_results(code, answer):
     async with httpx.AsyncClient() as client:
@@ -45,18 +38,22 @@ async def get_results(code, answer):
         results = await asyncio.gather(*tasks)
     return [result for result in results]
 
+
 def init_docker():
     client = docker.from_env()
+
     def build_docker_image():
         try:
             # Build the Docker image
             print("Building Docker image...")
-            current_dir = os.path.dirname(os.path.abspath(__file__))  # Get the current directory of the script
+            current_dir = os.path.dirname(
+                os.path.abspath(__file__)
+            )  # Get the current directory of the script
             image, logs = client.images.build(path=current_dir, tag="code-executor")
 
             # Print the build logs
             for log in logs:
-                print(log.get('stream', '').strip())
+                print(log.get("stream", "").strip())
 
             print("Docker image built successfully.")
             return image
@@ -67,18 +64,19 @@ def init_docker():
         try:
             # Run the Docker container
             print("Running Docker container...")
-            container = client.containers.run("code-executor",
-                                              ports={'5002/tcp': 5002},
-                                              detach=True)  # Runs in detached mode (in the background)
+            container = client.containers.run(
+                "code-executor", ports={"5002/tcp": 5002}, detach=True
+            )  # Runs in detached mode (in the background)
 
             print(f"Docker container is running with ID: {container.id}")
             return container
         except docker.errors.ContainerError as e:
             print(f"Error during Docker container run: {e}")
-    
+
     build_docker_image()
     container = run_docker_container()
     return container
+
 
 class CodingEnv(BaseEnv):
     def __init__(self, *args, **kwargs):
@@ -111,7 +109,7 @@ class CodingEnv(BaseEnv):
                     item[1],
                 )
             )
-        
+
         to_postprocess = await self.score(to_score)
         return to_postprocess, to_backlog
 
@@ -144,18 +142,23 @@ class CodingEnv(BaseEnv):
         prompt = tuple(
             [frozenset({"role": "user", "content": next_item["description"]}.items())]
         )
-        answer = (tuple(next_item["private_tests"]["input"]), tuple(next_item["private_tests"]["output"]), tuple(next_item["generated_tests"]["input"]), tuple(next_item["generated_tests"]["output"]))
+        answer = (
+            tuple(next_item["private_tests"]["input"]),
+            tuple(next_item["private_tests"]["output"]),
+            tuple(next_item["generated_tests"]["input"]),
+            tuple(next_item["generated_tests"]["output"]),
+        )
         return (prompt, answer)
 
     def extract_python_code_blocks(self, text):
-    # Regex specifically looks for ```python\n...code...\n```
-        pattern = r'^```(?:\w+)?\s*\n(.*?)(?=^```)```'
+        # Regex specifically looks for ```python\n...code...\n```
+        pattern = r"^```(?:\w+)?\s*\n(.*?)(?=^```)```"
         result = re.findall(pattern, text, re.DOTALL | re.MULTILINE)
         python_blocks = [r for r in result]
         return python_blocks
 
     async def score(self, rollout_group_data) -> Optional[ScoredDataGroup]:
-        #print("Rollout group data", rollout_group_data)
+        # print("Rollout group data", rollout_group_data)
         scores = ScoredDataGroup()
         scores["tokens"] = list()
         scores["masks"] = list()
@@ -191,6 +194,7 @@ class CodingEnv(BaseEnv):
         # if all([scores["scores"][0] == score for score in scores["scores"]]):
         #     return None  # If all the same, we return None
         return scores
+
 
 if __name__ == "__main__":
     CodingEnv.cli()
