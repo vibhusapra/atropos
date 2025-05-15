@@ -57,7 +57,7 @@ class GSM8kEnv(BaseEnv):
     @classmethod
     def config_init(cls) -> Tuple[BaseEnvConfig, List[APIServerConfig]]:
         env_config = BaseEnvConfig(
-            tokenizer_name="NousResearch/DeepHermes-3-Llama-3-3B-Preview",
+            tokenizer_name="Qwen/Qwen3-1.7B",
             group_size=8,
             use_wandb=True,
             rollout_server_url="http://localhost:8000",
@@ -69,13 +69,13 @@ class GSM8kEnv(BaseEnv):
         )
         server_configs = [
             APIServerConfig(
-                model_name="NousResearch/DeepHermes-3-Llama-3-3B-Preview",
-                base_url="http://localhost:9001/v1",
+                base_url="http://localhost:9001",
                 api_key="x",
                 num_requests_for_eval=256,
+                model_name="Qwen/Qwen3-1.7B",
+                server_type="trl",
             ),
         ]
-
         return env_config, server_configs
 
     async def wandb_log(self, wandb_metrics: Optional[Dict] = None):

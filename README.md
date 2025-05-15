@@ -211,6 +211,29 @@ Environments come with detailed logging and reporting support, runs track comple
 
 ---
 
+# Trainer Integrations
+## Axolotl
+<a href="https://github.com/axolotl-ai-cloud/plugin-atropos">
+  <img
+    src="https://github.com/user-attachments/assets/be629253-a8b1-4354-b6da-5e404e9c854d"
+    alt="Atropos plugin logo"
+    width="50%">
+</a>
+
+Axolotl is a powerful tool for fine-tuning a wide range of AI models, supporting techniques like LoRA and QLoRA through simple YAML configurations.
+
+The [Atropos plugin for Axolotl](https://github.com/axolotl-ai-cloud/plugin-atropos) seamlessly integrates Atropos' RL environments into Axolotl's training pipelines.
+This allows you to leverage Atropos for reinforcement learning while utilizing Axolotl's extensive features for model fine-tuning.
+
+To use, follow the readme on the [plugin repository](https://github.com/axolotl-ai-cloud/plugin-atropos).
+
+## Atropos' Example Trainer
+Atropos repo contains an example trainer that should primarily be used as a reference example to show how a trainer and inference provider can be integrated with Atropos to complete the RL Training Loop.
+
+To use the example trainer, see this page: [training example guide](example_trainer/README.md)
+
+---
+
 ## Testing and Debugging Tools
 
 The trajectory-handler provides several debugging tools to help environment developers test and understand their environments locally without requiring the full distributed infrastructure.
@@ -248,7 +271,7 @@ Rejection sampling can be controlled via `--save-top-n-per-group`, `--allow-nega
 If you would like to use OpenAI models, please edit your `config_init` to something like the following:
 ```python
     @classmethod
-    def config_init(cls) -> Tuple[BaseEnvConfig, List[OpenaiConfig]]:
+    def config_init(cls) -> Tuple[BaseEnvConfig, List[APIServerConfig]]:
         env_config = BaseEnvConfig(
             tokenizer_name="Qwen/Qwen2.5-1.5B-Instruct",
             group_size=8,
@@ -261,7 +284,7 @@ If you would like to use OpenAI models, please edit your `config_init` to someth
             wandb_name="gsm8k",
         )
         server_configs = [
-            OpenaiConfig(
+            APIServerConfig(
                 model_name="gpt-4.1-nano",
                 base_url=None,
                 api_key=os.environ.get("OPENAI_API_KEY"),

@@ -14,10 +14,10 @@ from pydantic import Field
 from tqdm.asyncio import tqdm_asyncio
 
 from atroposlib.envs.base import (
+    APIServerConfig,
     BaseEnv,
     BaseEnvConfig,
     EvalHandlingEnum,
-    OpenaiConfig,
     ScoredDataGroup,
 )
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
@@ -154,7 +154,7 @@ class MathEnv(BaseEnv):
     def __init__(
         self,
         config: RSConfig,
-        server_configs: List[OpenaiConfig],
+        server_configs: List[APIServerConfig],
         slurm=True,
         testing=False,
     ):
@@ -177,7 +177,7 @@ class MathEnv(BaseEnv):
         self.iter = 0
 
     @classmethod
-    def config_init(self) -> Tuple[RSConfig, List[OpenaiConfig]]:
+    def config_init(self) -> Tuple[RSConfig, List[APIServerConfig]]:
         env_config = RSConfig(
             tokenizer_name="deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
             group_size=8,
@@ -192,7 +192,7 @@ class MathEnv(BaseEnv):
             eval_limit_ratio=0.1,
         )
         server_configs = [
-            OpenaiConfig(
+            APIServerConfig(
                 model_name="deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
                 base_url="http://localhost:9004/v1",
                 api_key="x",

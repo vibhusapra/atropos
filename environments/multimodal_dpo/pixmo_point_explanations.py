@@ -9,7 +9,12 @@ import requests
 from datasets import load_dataset
 from PIL import Image
 
-from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataGroup
+from atroposlib.envs.base import (
+    APIServerConfig,
+    BaseEnv,
+    BaseEnvConfig,
+    ScoredDataGroup,
+)
 from atroposlib.type_definitions import GameHistory, Item
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
@@ -161,7 +166,7 @@ class PixmoPointExplanationsEnv(BaseEnv):
         return scores
 
     @classmethod
-    def config_init(cls) -> Tuple[BaseEnvConfig, List[OpenaiConfig]]:
+    def config_init(cls) -> Tuple[BaseEnvConfig, List[APIServerConfig]]:
 
         config = BaseEnvConfig(
             wandb_name="pixmo_point_explanations",
@@ -177,7 +182,7 @@ class PixmoPointExplanationsEnv(BaseEnv):
         )
 
         server_configs = [
-            OpenaiConfig(
+            APIServerConfig(
                 model_name="Qwen/Qwen2-VL-2B-Instruct",
                 base_url="http://localhost:9001/v1",
                 api_key="x",

@@ -6,7 +6,7 @@ import os
 
 from dotenv import load_dotenv
 
-from atroposlib.envs.base import OpenaiConfig
+from atroposlib.envs.base import APIServerConfig
 from atroposlib.envs.reward_fns import registry
 
 # from atroposlib.utils.config_handler import ConfigHandler
@@ -133,7 +133,7 @@ async def main():
                 api_key = os.environ.get(env_var, "")
 
             server_configs.append(
-                OpenaiConfig(
+                APIServerConfig(
                     model_name=server_config.get("model_name", "gpt-4.1-nano"),
                     base_url=server_config.get("base_url", None),
                     api_key=api_key,
@@ -146,7 +146,7 @@ async def main():
             "No 'server_configs' found in config. Using default OpenAI config."
         )
         server_configs.append(
-            OpenaiConfig(
+            APIServerConfig(
                 model_name="gpt-4.1-nano",
                 base_url=None,
                 api_key=os.environ.get("OPENAI_API_KEY"),

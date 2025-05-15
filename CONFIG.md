@@ -42,7 +42,7 @@ Settings for the `ServerManager`.
 
 ## Server Baseline Configuration (`atroposlib.envs.server_handling.server_manager.ServerBaseline`)
 
-Baseline configuration used by `ServerManager` if a list of `OpenaiConfig` is not provided, particularly for setting up local or SLURM-based server discovery.
+Baseline configuration used by `ServerManager` if a list of `APIServerConfig` is not provided, particularly for setting up local or SLURM-based server discovery.
 
 | Parameter                  | Type    | Default   | Description                                                                                             |
 | :------------------------- | :------ | :-------- | :------------------------------------------------------------------------------------------------------ |
@@ -52,7 +52,7 @@ Baseline configuration used by `ServerManager` if a list of `OpenaiConfig` is no
 | `model_name`               | `str`   | `default` | Model name to use when calling inference servers.                                                     |
 | `rolling_buffer_length`    | `int`   | `1000`    | Length of the rolling buffer to store server metrics (like request timings, attempts).                   |
 
-## OpenAI Server Configuration (`atroposlib.envs.server_handling.openai_server.OpenaiConfig`)
+## OpenAI Server Configuration (`atroposlib.envs.server_handling.openai_server.APIServerConfig`)
 
 Configuration for individual OpenAI-compatible API servers (including local SGLang/vLLM instances).
 
@@ -65,3 +65,4 @@ Configuration for individual OpenAI-compatible API servers (including local SGLa
 | `num_requests_for_eval`    | `int`        | `64`      | Maximum number of concurrent requests for evaluation.                                                   |
 | `model_name`               | `str`        | `default` | The model name to use. Required for both OpenAI and local models (e.g., `"gpt-4"`, `"NousResearch/..."`). |
 | `rolling_buffer_length`    | `int`        | `1000`    | Length of the rolling buffer to store server metrics (like request timings, attempts).                   |
+| `n_kwarg_is_ignored`       | `bool`       | `False`   | If the n kwarg is ignored by the API you are using, set this to True.                                   |

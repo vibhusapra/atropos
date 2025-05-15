@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Tuple
 
 import gymnasium as gym
 
-from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataItem
+from atroposlib.envs.base import APIServerConfig, BaseEnv, BaseEnvConfig, ScoredDataItem
 from atroposlib.type_definitions import Item
 
 start_msg = """### Description
@@ -164,7 +164,7 @@ class GymTaxiEnv(BaseEnv):
     def __init__(
         self,
         config: BaseEnvConfig,
-        server_configs: List[OpenaiConfig],
+        server_configs: List[APIServerConfig],
         slurm=True,
         testing=False,
     ):
@@ -178,7 +178,7 @@ class GymTaxiEnv(BaseEnv):
         self.print_this_env = False
 
     @classmethod
-    def config_init(cls) -> Tuple[BaseEnvConfig, List[OpenaiConfig]]:
+    def config_init(cls) -> Tuple[BaseEnvConfig, List[APIServerConfig]]:
         env_config = BaseEnvConfig(
             tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
             group_size=32,
@@ -188,7 +188,7 @@ class GymTaxiEnv(BaseEnv):
             wandb_name="gym_taxi",
         )
         server_configs = [
-            OpenaiConfig(
+            APIServerConfig(
                 model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
                 base_url="http://localhost:9001/v1",
                 api_key="x",
