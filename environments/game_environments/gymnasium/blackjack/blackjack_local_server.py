@@ -6,7 +6,7 @@ import random
 from dotenv import load_dotenv
 
 from atroposlib.envs.base import EvalHandlingEnum, OpenaiConfig
-from environments.game_environments.gymnasium.blackjack_env_thinking import (
+from environments.game_environments.gymnasium.blackjack.blackjack_env_thinking import (
     BlackjackEnv,
     BlackjackEnvConfig,
 )
