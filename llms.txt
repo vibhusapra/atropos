@@ -40,9 +40,9 @@ Atropos provides a robust, scalable framework for **Reinforcement Learning Envir
 
 ## 5. Navigating the Repo
 
-| Category                      | Description                                      |
-|-------------------------------|--------------------------------------------------|
-| 📁 [`atroposlib/`](atroposlib/) | Core library containing base classes and utilities (see #10-core-library-atroposlib) |
+| Category                        | Description                                      |
+|---------------------------------|--------------------------------------------------|
+| 📁 [`atroposlib/`](atroposlib/)  | Core library containing base classes and utilities (see #10-core-library-atroposlib) |
 | 🎮 [`environments/`](environments/) | Collection of ready-to-use RL environments       |
 | 📚 [`example_trainer/`](example_trainer/) | Example training scripts and configurations    |
 
@@ -528,15 +528,11 @@ Ensure all tests pass before submitting a PR.
         ```bash
         pytest
         ```
-    6.  **Format and Lint:** Ensure your code adheres to our style guidelines. Pre-commit hooks should handle this automatically. You can also run them manually:
+    6.  **Format and Lint:** Ensure your code adheres to our style guidelines. Pre-commit hooks (which run tools like `black`, `flake8`, `isort`) will run automatically on commit. You can also run them manually:
         ```bash
-        # Run linters and formatters
-        ruff format .
-        ruff check . --fix
-        mypy .
-        # Or run all pre-commit hooks
-        # pre-commit run --all-files
+        pre-commit run --all-files
         ```
+        Address any `flake8` errors manually if they are not automatically fixed.
     7.  **Commit Your Changes:** Use Conventional Commits format for your messages:
         ```bash
         git add .
@@ -552,14 +548,12 @@ Ensure all tests pass before submitting a PR.
 
 ### 12.5. Code Style
 
-*   Follow PEP 8 guidelines.
-*   We use **Ruff** for formatting and linting, and **MyPy** for type checking.
-*   Pre-commit hooks are configured to enforce these styles automatically. If you need to run them manually:
+*   PEP 8 is enforced by `black`, `flake8`, `isort` via `pre-commit`.
+*   Manual check/fix:
     ```bash
-    ruff format .
-    ruff check . --fix
-    mypy .
+    pre-commit run --all-files
     ```
+*   Address `flake8` errors manually if needed.
 
 ### 12.6. License for Contributions
 
