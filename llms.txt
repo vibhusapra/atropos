@@ -42,7 +42,7 @@ Atropos provides a robust, scalable framework for **Reinforcement Learning Envir
 
 | Category                      | Description                                      |
 |-------------------------------|--------------------------------------------------|
-| 📁 [`atroposlib/`](atroposlib/) | Core library containing base classes and utilities |
+| 📁 [`atroposlib/`](atroposlib/) | Core library containing base classes and utilities (see #10-core-library-atroposlib) |
 | 🎮 [`environments/`](environments/) | Collection of ready-to-use RL environments       |
 | 📚 [`example_trainer/`](example_trainer/) | Example training scripts and configurations    |
 
@@ -94,11 +94,11 @@ pre-commit install
 ## 7. Quick Start Guide
 
 1.  **Create Your First Environment:**
-    *   Review the [Base Environment Class Documentation](atroposlib/envs/README.md).
+    *   Review the [Base Environment Class Documentation](atroposlib/envs/README.md) and related details in this document (#10.1-base-environment).
     *   Examine existing environments in [`environments/`](environments/) for examples.
 
 2.  **Run an Example Environment:**
-    *   Edit the `config_init` section of the environment file you want to run (e.g., `environments/gsm8k_server.py`) to point to a running VLLM or SGLang inference server and make other [configuration changes](CONFIG.md) as needed.
+    *   Edit the `config_init` section of the environment file you want to run (e.g., `environments/gsm8k_server.py`) to point to a running VLLM or SGLang inference server and make other [configuration changes](CONFIG.md) as needed (see also Atropos specific configurations #10.2-configuration-options-atroposlib).
     ```bash
     # Start the central API server (trajectory handler) in one terminal
     run-api &
@@ -114,8 +114,8 @@ pre-commit install
     *Note: Model names are examples. Adjust as per your inference server setup.*
 
 3.  **Grabbing Rollouts / Training Your Model:**
-    *   For just collecting rollouts without a full trainer, see the [Debugging Tools section](#11-debugging-tools) (e.g., `view-run`, `atropos-sft-gen`, `process` subcommand).
-    *   For training, refer to the [Example Trainer Guide](example_trainer/README.md) or integration guides for trainers like Axolotl.
+    *   For just collecting rollouts without a full trainer, see the [Debugging Tools section](#11-debugging-tools) (detailed in #11-debugging-tools) (e.g., `view-run`, `atropos-sft-gen`, `process` subcommand).
+    *   For training, refer to the [Example Trainer Guide](example_trainer/README.md) (covered in #9-training-with-the-example-trainer) or integration guides for trainers like Axolotl.
     *   Monitor progress via logging: completion lengths, eval accuracies, full rollouts/scores (WandB integration available).
     *   Multiple environments can run concurrently, pointing to the same `run-api` server.
 
@@ -366,7 +366,7 @@ This class provides the foundation for creating custom RL environments. Subclass
 *   **`async def postprocess_histories(self, trajectories: Union[Optional[ScoredDataGroup], List[Optional[ScoredDataGroup]]]) -> Union[Optional[ScoredDataGroup], List[Optional[ScoredDataGroup]]]`**: Called after `collect_trajectories` and before sending data to the server. Use for final processing, scoring, filtering, or formatting of the collected group data.
 *   **`async def wandb_log(self, wandb_metrics: Optional[Dict] = None)`**: Called periodically for W&B logging. Add custom metrics to `wandb_metrics`. **Crucially, call `await super().wandb_log(wandb_metrics)`** at the end to include base metrics and rollouts.
 *   **`save_checkpoint(self, step, data=None)`**: Called automatically by the server based on `checkpoint_interval`. Saves the provided `data` dict (populated with environment state) to JSON. Override to customize *what* or *how* data is saved.
-*   **`@classmethod config_init(cls) -> Tuple[BaseEnvConfig, Union[ServerBaseline, List[APIServerConfig]]]`**: Used by CLI `serve` command setup. Returns initial `BaseEnvConfig` and server config(s). Override for custom default CLI configurations. Default returns `cls.env_config_cls(), ServerBaseline()`.
+*   **`@classmethod config_init(cls) -> Tuple[BaseEnvConfig, Union[ServerBaseline, List[APIServerConfig]]]`**: Used by CLI `serve` command setup. Returns initial `BaseEnvConfig` (#10.2.1-base-environment-config), `ServerBaseline` (#10.2.3-server-baseline-config), and server config(s) (e.g., `APIServerConfig` #10.2.4-openai-server-config). Override for custom default CLI configurations. Default returns `cls.env_config_cls(), ServerBaseline()`.
 *   **`async def cleanup(self)`**: Called after each item processing (`handle_env`). Use for per-item cleanup if needed (rarely required).
 
 **Provided Functionality:**
