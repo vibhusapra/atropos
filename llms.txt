@@ -428,7 +428,7 @@ Default settings used by `ServerManager` if specific `APIServerConfig` list isn'
 | `num_max_requests_at_once` | `int`   | `512`     | Max concurrent requests (training). Divide by generation `n` param.                                     |
 | `num_requests_for_eval`    | `int`   | `64`      | Max concurrent requests (evaluation).                                                                   |
 | `model_name`               | `str`   | `default` | Default model name for inference calls.                                                                 |
-| `rolling_buffer_length`    | `int`   | `1000`    | Buffer length for server metrics (timings, attempts).                                                  |
+| `rolling_buffer_length`    | `int`   | `1000`    | Buffer length for server metrics (timings, attempts).                                                   |
 
 #### 10.2.4. OpenAI Server Config (`atroposlib.envs.server_handling.openai_server.APIServerConfig`)
 
@@ -436,13 +436,15 @@ Configuration for individual OpenAI-compatible API servers (official OpenAI, loc
 
 | Parameter                  | Type         | Default   | Description                                                                                             |
 | :------------------------- | :----------- | :-------- | :------------------------------------------------------------------------------------------------------ |
-| `api_key`                  | `str | None` | `None`    | API key. For local servers without authentication, a non-empty string (e.g., "x") can be used. If `None` when targeting services like official OpenAI, the underlying client library typically attempts to use an environment variable (e.g., `OPENAI_API_KEY`).   |
+| `api_key`                  | `str | None` | `None`    | API key. For local servers without authentication, a non-empty string (e.g., "x") can be used. If `None`|
+|                            |              |           | when targeting services like official OpenAI, the underlying client library typically attempts to use an|
+|                            |              |           | environment variable (e.g., `OPENAI_API_KEY`).                                                          |
 | `base_url`                 | `str | None` | `None`    | API endpoint URL. `None` for official OpenAI. Local: e.g., `http://localhost:9004/v1`.                  |
 | `timeout`                  | `int`        | `1200`    | Request timeout (seconds).                                                                              |
-| `num_max_requests_at_once` | `int`        | `512`     | Max concurrent requests (training). Divide by generation `n`.                                          |
+| `num_max_requests_at_once` | `int`        | `512`     | Max concurrent requests (training). Divide by generation `n`.                                           |
 | `num_requests_for_eval`    | `int`        | `64`      | Max concurrent requests (evaluation).                                                                   |
-| `model_name`               | `str`        | `default` | **Required.** Model name for this server (e.g., `"gpt-4"`, `"NousResearch/..."`).                        |
-| `rolling_buffer_length`    | `int`        | `1000`    | Buffer length for this server's metrics.                                                               |
+| `model_name`               | `str`        | `default` | **Required.** Model name for this server (e.g., `"gpt-4"`, `"NousResearch/..."`).                       |
+| `rolling_buffer_length`    | `int`        | `1000`    | Buffer length for this server's metrics.                                                                |
 
 ---
 
@@ -470,7 +472,12 @@ The trajectory-handler and environment framework provide tools for local debuggi
 
 We welcome contributions! Please see `CONTRIBUTING.md` for detailed guidelines.
 
-**Key Steps:**
+### 12.1. How We Develop
+
+*   **GitHub:** Used for hosting, issue tracking, and Pull Requests (PRs).
+*   **GitHub Flow:** Development happens via PRs merged into the `main` branch.
+
+### 12.2. Getting Started
 
 1.  **Fork the Repository:** Create your own fork of the `NousResearch/atropos` repository on GitHub.
 2.  **Clone Your Fork:**
@@ -478,47 +485,99 @@ We welcome contributions! Please see `CONTRIBUTING.md` for detailed guidelines.
     git clone https://github.com/YOUR_USERNAME/atropos.git
     cd atropos
     ```
-3.  **Create a Branch:** Create a new branch for your changes.
+3.  **Setup Dev Env:** Ensure you have Python 3.10+. Consider using a virtual environment:
     ```bash
-    git checkout -b your-branch-name main
+    python -m venv .venv
+    source .venv/bin/activate # On Windows: .venv\Scripts\activate
+    pip install -e ".[dev]"   # Installs core + dev dependencies
     ```
-4.  **Make Changes:** Implement your features or bug fixes.
-5.  **Test Your Changes:** Ensure your changes pass all tests and do not introduce regressions.
+4.  **Install Pre-commit Hooks:**
     ```bash
-    # Install development dependencies if you haven't already
-    pip install -e .[dev]
-    # Run tests (ensure you have test-specific dependencies if any)
-    pytest
-    ```
-6.  **Format and Lint:** Ensure your code adheres to our style guidelines.
-    ```bash
-    # Install pre-commit hooks to automate this
     pre-commit install
-    # Run linters manually if needed
+    ```
+    (This runs linters/formatters automatically on commit)
+
+### 12.3. Running Tests
+
+Atropos uses `pytest` for testing.
+```bash
+# Ensure development dependencies are installed (pip install -e .[dev])
+pytest
+```
+Ensure all tests pass before submitting a PR.
+
+### 12.4. How to Contribute
+
+*   **Reporting Bugs:**
+    *   Use the **Bug Report** issue template on GitHub Issues.
+    *   Provide comprehensive details: a clear summary, steps to reproduce, expected vs. actual behavior, environment information (OS, Python version, Atropos version), and any relevant error messages or logs.
+
+*   **Suggesting Enhancements:**
+    *   Use the **Feature Request** issue template on GitHub Issues.
+    *   It's often a good idea to discuss the proposed enhancement in the issue before starting significant work.
+
+*   **Submitting Changes (Pull Requests):**
+    1.  **Create a Branch:** Create a new branch from `main` for your changes:
+        ```bash
+        git checkout -b your-branch-name main
+        ```
+    2.  **Make Changes:** Implement your features or bug fixes. Write clear, maintainable code.
+    3.  **Add Tests:** If you're adding new features or fixing bugs, please include relevant tests.
+    4.  **Update Documentation:** If your changes affect APIs, behavior, or require new setup steps, update relevant READMEs, docstrings, or other documentation (like this `llms.txt` file if applicable).
+    5.  **Test Your Changes:** Ensure your changes pass all tests:
+        ```bash
+        pytest
+        ```
+    6.  **Format and Lint:** Ensure your code adheres to our style guidelines. Pre-commit hooks should handle this automatically. You can also run them manually:
+        ```bash
+        # Run linters and formatters
+        ruff format .
+        ruff check . --fix
+        mypy .
+        # Or run all pre-commit hooks
+        # pre-commit run --all-files
+        ```
+    7.  **Commit Your Changes:** Use Conventional Commits format for your messages:
+        ```bash
+        git add .
+        git commit -m "feat: Your descriptive commit message" # Examples: fix:, docs:, style:, refactor:, test:, chore:
+        ```
+    8.  **Push to Your Fork:**
+        ```bash
+        git push origin your-branch-name
+        ```
+    9.  **Open a Pull Request:** Submit a PR from your fork's branch to the `NousResearch/atropos:main` branch on GitHub.
+    10. **Use the Correct PR Template:** The repository may have specific PR templates (e.g., `environment_pull_request_template.md`, `non_environment_pull_request_template.md`). Please use the appropriate one.
+    11. **Describe Your PR:** Provide a clear title and a detailed description of your changes. Link any relevant issues (e.g., "Closes #123").
+
+### 12.5. Code Style
+
+*   Follow PEP 8 guidelines.
+*   We use **Ruff** for formatting and linting, and **MyPy** for type checking.
+*   Pre-commit hooks are configured to enforce these styles automatically. If you need to run them manually:
+    ```bash
     ruff format .
     ruff check . --fix
     mypy .
     ```
-7.  **Commit Your Changes:**
-    ```bash
-    git add .
-    git commit -m "feat: Your descriptive commit message" # Or fix:, docs:, etc.
-    ```
-8.  **Push to Your Fork:**
-    ```bash
-    git push origin your-branch-name
-    ```
-9.  **Submit a Pull Request:** Open a pull request from your branch to the `main` branch of `NousResearch/atropos`. Provide a clear description of your changes.
 
-**Code Style:**
-*   Follow PEP 8 guidelines.
-*   Use Ruff for formatting and linting, and MyPy for type checking. Pre-commit hooks are configured to help with this.
+### 12.6. License for Contributions
 
-**Commit Messages:**
-*   Follow the Conventional Commits specification (e.g., `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`).
+By contributing to Atropos, you agree that your contributions will be licensed under the **MIT License**, consistent with the project's overall license.
 
-**Licensing for Contributions:**
-*   By contributing, you agree that your contributions will be licensed under the MIT License, as per the project's `LICENSE` file.
+### 12.7. Environment Contribution Guidelines
+
+*   **Legal and GitHub Compliance:** Ensure any contributed environment or related content is legal and complies with GitHub's Terms of Service.
+*   **Explicit Content:** Environments containing explicit content may be considered if they are clearly labeled, serve a clear research or educational purpose, and are legally compliant. Discuss such contributions via an issue first.
+*   **Game Environments:** Contributions of game environments are welcome.
+    *   Avoid reverse-engineering proprietary commercial games.
+    *   Ensure you have the rights to use any assets (graphics, sound, text). Open-source or permissively licensed assets are preferred.
+*   **Ethical Considerations:** Avoid environments that promote or glorify harm, discrimination, or illegal activities without a strong, clearly articulated educational or research justification.
+*   When in doubt, or if your environment might be controversial, please open an issue to discuss it with the maintainers *before* submitting a PR.
+
+### 12.8. Contributor Code of Conduct
+
+All contributors are expected to adhere to the project's [Contributor Code of Conduct](CODE_OF_CONDUCT.md). Please familiarize yourself with it to ensure a respectful and collaborative environment for everyone.
 
 ---
 
