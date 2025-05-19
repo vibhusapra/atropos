@@ -88,6 +88,31 @@ You are a deep thinking AI, you may use extremely long chains of thought to deep
   - Linear penalty scaling from 1.0 down to 0.0 for responses between 50% and 100% of max length
   - Returns None if all scores are identical (no learning signal)
 
+---
+
+### Screen Capture Environment (`screen_capture_env.py`)
+
+Environment for training models to describe screen recordings. A multimodal
+model such as Gemini 2.5v receives an uploaded video and must explain the
+actions performed. Rewards are based on how closely the explanation matches an
+expected list of steps.
+
+**Input Format:**
+- Each item contains:
+  - `video_path`: Path to an MP4 screen recording
+  - `task`: Text describing what the video depicts
+  - `expected_steps`: Ordered list of key steps
+
+**System Prompt:**
+```
+You are a helpful assistant that explains the actions in a screen recording step by step.
+Return a concise summary of what occurs in the video.
+```
+
+**Reward Function:**
+- Fraction of expected steps mentioned in the assistant response
+- 0.0 if no steps match
+
 ## Common Features
 
 All environments share these common features:
